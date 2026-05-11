@@ -47,6 +47,7 @@
             transform: rotate(45deg); display: flex;
             justify-content: center; align-items: center;
             box-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+            transition: background-color 0.1s ease;
         }
         .upsilon { color: black; font-size: 100px; font-weight: bold; transform: rotate(-45deg); margin-top: -8px; pointer-events: none; }
 
@@ -193,17 +194,35 @@
         function renderFrame() {
             requestAnimationFrame(renderFrame);
             analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < 10; i++) sum += dataArray[i];
-            let average = sum / 10;
+
+            // Calcul des intensités par plages
+            let bass = 0, mid = 0, high = 0;
+            for (let i = 0; i < 10; i++) bass += dataArray[i];    // Basses
+            for (let i = 10; i < 50; i++) mid += dataArray[i];   // Mediums
+            for (let i = 50; i < 100; i++) high += dataArray[i]; // Aigus
+            
+            bass /= 10; mid /= 40; high /= 50;
+            let average = bass; // On garde les basses pour l'impulsion physique
+
+            // Mixage des couleurs : 
+            // Basses (Violet/Bleu) | Mediums (Bleu) | Aigus (Orange)
+            let r = Math.min(255, (bass * 0.8) + (high * 2.0));
+            let g = Math.min(255, (mid * 0.3) + (high * 1.2));
+            let b = Math.min(255, (bass * 1.5) + (mid * 2.0));
+
+            if (bass + mid + high > 10) {
+                diamond.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            } else {
+                diamond.style.backgroundColor = `white`;
+            }
 
             if (average > 185) { 
                 createRing();
                 diamond.style.transform = `rotate(45deg) scale(${1 + (average / 550)})`;
-                diamond.style.boxShadow = `0 0 ${average/3}px rgba(255, 255, 255, 0.4)`;
+                diamond.style.boxShadow = `0 0 ${average/2}px rgba(${r}, ${g}, ${b}, 0.6)`;
             } else {
                 diamond.style.transform = `rotate(45deg) scale(1)`;
-                diamond.style.boxShadow = `0 0 40px rgba(255, 255, 255, 0.2)`;
+                diamond.style.boxShadow = `0 0 40px rgba(${r}, ${g}, ${b}, 0.2)`;
             }
         }
 
