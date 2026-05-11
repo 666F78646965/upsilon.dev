@@ -47,7 +47,6 @@
             transform: rotate(45deg); display: flex;
             justify-content: center; align-items: center;
             box-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
-            transition: background-color 0.1s ease;
         }
         .upsilon { color: black; font-size: 100px; font-weight: bold; transform: rotate(-45deg); margin-top: -8px; pointer-events: none; }
 
@@ -131,14 +130,23 @@
         let loadTimer;
         let audioCtx, analyser, dataArray, source;
         let isInitialized = false;
+        
+        let currentScale = 1;
+        let lastRingTime = 0;
 
-        function createRing() {
+        // Fonction modifiée pour accepter une couleur
+        function createRing(color = 'white') {
             const ring = document.createElement('div');
             ring.className = 'ring';
+            ring.style.borderColor = color;
+            // Ajout d'un éclat lumineux de la même couleur
+            ring.style.boxShadow = `0 0 15px ${color}`;
             tunnel.appendChild(ring);
             setTimeout(() => ring.remove(), 3000);
         }
-        setInterval(createRing, 1500);
+        
+        // Pulsation par défaut en pause
+        setInterval(() => { if(audio.paused) createRing('rgba(255,255,255,0.3)'); }, 1500);
 
         window.addEventListener('mousemove', (e) => {
             const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 30;
@@ -148,7 +156,7 @@
 
         const triggerInteraction = () => {
             diamond.classList.add('vibrate-active');
-            for(let i=0; i<4; i++) setTimeout(createRing, i * 100);
+            for(let i=0; i<4; i++) setTimeout(() => createRing('white'), i * 100);
             setTimeout(() => diamond.classList.remove('vibrate-active'), 400);
         };
         window.addEventListener('mousedown', triggerInteraction);
@@ -193,36 +201,40 @@
 
         function renderFrame() {
             requestAnimationFrame(renderFrame);
-            analyser.getByteFrequencyData(dataArray);
-
-            // Calcul des intensités par plages
-            let bass = 0, mid = 0, high = 0;
-            for (let i = 0; i < 10; i++) bass += dataArray[i];    // Basses
-            for (let i = 10; i < 50; i++) mid += dataArray[i];   // Mediums
-            for (let i = 50; i < 100; i++) high += dataArray[i]; // Aigus
-            
-            bass /= 10; mid /= 40; high /= 50;
-            let average = bass; // On garde les basses pour l'impulsion physique
-
-            // Mixage des couleurs : 
-            // Basses (Violet/Bleu) | Mediums (Bleu) | Aigus (Orange)
-            let r = Math.min(255, (bass * 0.8) + (high * 2.0));
-            let g = Math.min(255, (mid * 0.3) + (high * 1.2));
-            let b = Math.min(255, (bass * 1.5) + (mid * 2.0));
-
-            if (bass + mid + high > 10) {
-                diamond.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-            } else {
-                diamond.style.backgroundColor = `white`;
+            if (!isInitialized || audio.paused) {
+                currentScale += (1 - currentScale) * 0.1;
+                diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+                return;
             }
 
-            if (average > 185) { 
-                createRing();
-                diamond.style.transform = `rotate(45deg) scale(${1 + (average / 550)})`;
-                diamond.style.boxShadow = `0 0 ${average/2}px rgba(${r}, ${g}, ${b}, 0.6)`;
-            } else {
-                diamond.style.transform = `rotate(45deg) scale(1)`;
-                diamond.style.boxShadow = `0 0 40px rgba(${r}, ${g}, ${b}, 0.2)`;
+            analyser.getByteFrequencyData(dataArray);
+
+            let bass = 0, mid = 0, high = 0;
+            for (let i = 0; i < 6; i++) bass += dataArray[i];
+            for (let i = 10; i < 40; i++) mid += dataArray[i];
+            for (let i = 50; i < 100; i++) high += dataArray[i];
+            
+            bass /= 6; mid /= 30; high /= 50;
+
+            // Le diamant reste blanc mais réagit physiquement (scale)
+            let targetScale = 1 + (bass / 450); 
+            currentScale += (targetScale - currentScale) * 0.2;
+            diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+            diamond.style.backgroundColor = 'white'; 
+            diamond.style.boxShadow = `0 0 40px rgba(255, 255, 255, 0.2)`;
+
+            // Calcul des couleurs pour les ondes
+            // Basses -> Violet/Bleu | Mediums -> Bleu | Aigus -> Orange
+            let r = Math.min(255, (bass * 0.4) + (high * 2.2));
+            let g = Math.min(255, (mid * 0.4) + (high * 1.2));
+            let b = Math.min(255, (bass * 2.0) + (mid * 1.8));
+            let dynamicColor = `rgb(${r}, ${g}, ${b})`;
+
+            // Création d'anneaux colorés sur les beats
+            const now = Date.now();
+            if (bass > 190 && now - lastRingTime > 120) {
+                createRing(dynamicColor);
+                lastRingTime = now;
             }
         }
 
