@@ -13,7 +13,6 @@
             perspective: 1200px; touch-action: none;
         }
 
-        /* Header */
         .brand-header {
             position: absolute; top: 25px; left: 25px;
             display: flex; flex-direction: column; gap: 5px; z-index: 10;
@@ -23,7 +22,6 @@
 
         .container { display: flex; flex-direction: column; align-items: center; position: relative; }
 
-        /* Tunnel Waves */
         .tunnel-container {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
@@ -40,7 +38,6 @@
             100% { transform: translate(-50%, -50%) rotate(45deg) scale(5); opacity: 0; }
         }
 
-        /* Main Diamond */
         .tilt-wrapper {
             transition: transform 0.1s ease-out; transform-style: preserve-3d;
             cursor: crosshair; z-index: 5;
@@ -53,7 +50,6 @@
         }
         .upsilon { color: black; font-size: 100px; font-weight: bold; transform: rotate(-45deg); margin-top: -8px; pointer-events: none; }
 
-        /* Vibration au clic */
         .vibrate-active { animation: quick-vibrate 0.1s infinite; }
         @keyframes quick-vibrate {
             0% { transform: rotate(45deg) translate(0,0); }
@@ -63,7 +59,6 @@
 
         .subtitle { margin: 60px 0 30px 0; font-size: 0.7rem; letter-spacing: 10px; opacity: 0.8; text-align: center; }
 
-        /* Buttons with loading effect */
         .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
@@ -72,17 +67,13 @@
             background: transparent; cursor: pointer; transition: color 0.2s;
             overflow: hidden;
         }
-        /* The Loading Bar */
         .nav-button::before {
             content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0;
             background: white; z-index: -1; transition: none;
         }
-        .nav-button.loading::before {
-            width: 100%; transition: width 1s linear;
-        }
+        .nav-button.loading::before { width: 100%; transition: width 1s linear; }
         .nav-button.loading { color: black; }
 
-        /* Audio Player Styles */
         .audio-player {
             margin-top: 30px;
             display: flex;
@@ -90,12 +81,8 @@
             z-index: 15;
         }
         .audio-ctrl {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.6;
+            background: none; border: none; color: white;
+            font-size: 1.5rem; cursor: pointer; opacity: 0.6;
             transition: opacity 0.2s, transform 0.1s;
         }
         .audio-ctrl:hover { opacity: 1; }
@@ -123,7 +110,7 @@
             <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
             <div class="nav-button" data-url="https://upsilon.zip">⬪ upsilon.zip ⬪</div>
         </div>
-        
+
         <div class="audio-player">
             <button class="audio-ctrl" id="play-pause">⏯️</button>
             <button class="audio-ctrl" id="next-track">⏭️</button>
@@ -139,29 +126,25 @@
         const audio = document.getElementById('audio-element');
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
-        
+
         let loadTimer;
-        let currentTrack = 1;
         let audioCtx, analyser, dataArray, source;
         let isInitialized = false;
 
-        // Optimized Ring Creation
         function createRing() {
             const ring = document.createElement('div');
             ring.className = 'ring';
             tunnel.appendChild(ring);
             setTimeout(() => ring.remove(), 3000);
         }
-        setInterval(createRing, 1500); // Ambient flow
+        setInterval(createRing, 1500);
 
-        // Tilt logic
         window.addEventListener('mousemove', (e) => {
             const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 30;
             const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 30;
             target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
         });
 
-        // Click Pulse + Vibration
         const triggerInteraction = () => {
             diamond.classList.add('vibrate-active');
             for(let i=0; i<4; i++) setTimeout(createRing, i * 100);
@@ -170,35 +153,25 @@
         window.addEventListener('mousedown', triggerInteraction);
         window.addEventListener('touchstart', triggerInteraction);
 
-        // Advanced Button Logic
         document.querySelectorAll('.nav-button').forEach(btn => {
             const url = btn.getAttribute('data-url');
-
             const startLoading = () => {
                 btn.classList.add('loading');
                 loadTimer = setTimeout(() => {
-                    if (confirm(`Open ${url}?`)) {
-                        window.open(url, '_blank');
-                    }
+                    if (confirm(`Open ${url}?`)) window.open(url, '_blank');
                     stopLoading();
                 }, 1300);
             };
-
             const stopLoading = () => {
                 btn.classList.remove('loading');
                 clearTimeout(loadTimer);
             };
-
             btn.addEventListener('mouseenter', startLoading);
             btn.addEventListener('mouseleave', stopLoading);
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startLoading();
-            });
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); startLoading(); });
             btn.addEventListener('touchend', stopLoading);
         });
 
-        // Audio Logic
         function initAudio() {
             if (isInitialized) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -212,32 +185,31 @@
             renderFrame();
         }
 
-        function loadTrack(num) {
-            audio.src = `play${num}.mp3`;
+        function loadTrack() {
+            audio.src = 'raindrop.mp3';
             audio.play().catch(() => {});
         }
 
         function renderFrame() {
             requestAnimationFrame(renderFrame);
             analyser.getByteFrequencyData(dataArray);
-            
-            // Bass beat detection (low frequencies)
             let sum = 0;
             for (let i = 0; i < 10; i++) sum += dataArray[i];
             let average = sum / 10;
 
-            if (average > 180) { // Beat Threshold
+            if (average > 185) { 
                 createRing();
-                diamond.style.transform = `rotate(45deg) scale(${1 + (average / 500)})`;
+                diamond.style.transform = `rotate(45deg) scale(${1 + (average / 550)})`;
+                diamond.style.boxShadow = `0 0 ${average/3}px rgba(255, 255, 255, 0.4)`;
             } else {
                 diamond.style.transform = `rotate(45deg) scale(1)`;
+                diamond.style.boxShadow = `0 0 40px rgba(255, 255, 255, 0.2)`;
             }
         }
 
         playPauseBtn.addEventListener('click', () => {
             initAudio();
-            if (!audio.src) loadTrack(currentTrack);
-            
+            if (!audio.src) loadTrack();
             if (audio.paused) {
                 audio.play();
                 audioCtx.resume();
@@ -248,150 +220,11 @@
 
         nextBtn.addEventListener('click', () => {
             initAudio();
-            currentTrack = currentTrack < 9 ? currentTrack + 1 : 1;
-            loadTrack(currentTrack);
+            loadTrack();
         });
 
         audio.addEventListener('ended', () => {
-            currentTrack = currentTrack < 9 ? currentTrack + 1 : 1;
-            loadTrack(currentTrack);
-        });
-
-    </script>
-</body>
-</html>
-        }
-        @keyframes wave-expand {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.7; }
-            100% { transform: translate(-50%, -50%) rotate(45deg) scale(5); opacity: 0; }
-        }
-
-        /* Main Diamond */
-        .tilt-wrapper {
-            transition: transform 0.1s ease-out; transform-style: preserve-3d;
-            cursor: crosshair; z-index: 5;
-        }
-        .diamond {
-            width: 160px; height: 160px; background-color: white;
-            transform: rotate(45deg); display: flex;
-            justify-content: center; align-items: center;
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
-        }
-        .upsilon { color: black; font-size: 100px; font-weight: bold; transform: rotate(-45deg); margin-top: -8px; pointer-events: none; }
-
-        /* Vibration au clic */
-        .vibrate-active { animation: quick-vibrate 0.1s infinite; }
-        @keyframes quick-vibrate {
-            0% { transform: rotate(45deg) translate(0,0); }
-            50% { transform: rotate(45.5deg) translate(2px, -2px); }
-            100% { transform: rotate(45deg) translate(0,0); }
-        }
-
-        .subtitle { margin: 60px 0 30px 0; font-size: 0.7rem; letter-spacing: 10px; opacity: 0.8; text-align: center; }
-
-        /* Buttons with loading effect */
-        .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
-        .nav-button {
-            font-family: 'Courier New', monospace; color: white;
-            text-decoration: none; font-size: 0.85rem; padding: 8px 20px;
-            position: relative; border: 1px solid rgba(255,255,255,0.3);
-            background: transparent; cursor: pointer; transition: color 0.2s;
-            overflow: hidden;
-        }
-        /* The Loading Bar */
-        .nav-button::before {
-            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0;
-            background: white; z-index: -1; transition: none;
-        }
-        .nav-button.loading::before {
-            width: 100%; transition: width 1s linear;
-        }
-        .nav-button.loading { color: black; }
-    </style>
-</head>
-<body>
-
-    <div class="brand-header">
-        <div class="line1">🆈 𝘂𝗽𝘀𝗶𝗹𝗼𝗻.dev</div>
-        <div class="line-mono">🅈 upsilon.media</div>
-        <div class="line-mono">🅈 upsilon.zip</div>
-    </div>
-
-    <div class="container">
-        <div class="tunnel-container" id="tunnel"></div>
-        <div class="tilt-wrapper" id="target">
-            <div class="diamond" id="main-diamond">
-                <span class="upsilon">&Upsilon;</span>
-            </div>
-        </div>
-        <div class="subtitle">AI + HUMAN COLLABORATION</div>
-        <div class="nav-links">
-            <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.zip">⬪ upsilon.zip ⬪</div>
-        </div>
-    </div>
-
-    <script>
-        const target = document.getElementById('target');
-        const diamond = document.getElementById('main-diamond');
-        const tunnel = document.getElementById('tunnel');
-        let loadTimer;
-
-        // Optimized Ring Creation
-        function createRing() {
-            const ring = document.createElement('div');
-            ring.className = 'ring';
-            tunnel.appendChild(ring);
-            setTimeout(() => ring.remove(), 3000);
-        }
-        setInterval(createRing, 1500); // Ambient flow
-
-        // Tilt logic
-        window.addEventListener('mousemove', (e) => {
-            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 30;
-            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 30;
-            target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
-        });
-
-        // Click Pulse + Vibration
-        const triggerInteraction = () => {
-            diamond.classList.add('vibrate-active');
-            for(let i=0; i<4; i++) setTimeout(createRing, i * 100);
-            setTimeout(() => diamond.classList.remove('vibrate-active'), 400);
-        };
-        window.addEventListener('mousedown', triggerInteraction);
-        window.addEventListener('touchstart', triggerInteraction);
-
-        // Advanced Button Logic
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            const url = btn.getAttribute('data-url');
-
-            const startLoading = () => {
-                btn.classList.add('loading');
-                loadTimer = setTimeout(() => {
-                    if (confirm(`Open ${url}?`)) {
-                        window.open(url, '_blank');
-                    }
-                    stopLoading();
-                }, 1300);
-            };
-
-            const stopLoading = () => {
-                btn.classList.remove('loading');
-                clearTimeout(loadTimer);
-            };
-
-            // Desktop
-            btn.addEventListener('mouseenter', startLoading);
-            btn.addEventListener('mouseleave', stopLoading);
-
-            // Mobile
-            btn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                startLoading();
-            });
-            btn.addEventListener('touchend', stopLoading);
+            loadTrack();
         });
     </script>
 </body>
