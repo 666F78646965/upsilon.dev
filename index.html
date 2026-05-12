@@ -71,39 +71,39 @@
             color: white; font-size: 85px; font-weight: bold; 
             transform: rotate(-45deg); pointer-events: none;
             z-index: 2;
-            /* Removed red/green aberration */
             text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
 
         .subtitle-area { 
             margin: 40px 0 20px 0; 
             text-align: center;
-            height: 30px;
+            height: 45px;
         }
         .subtitle { font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-transform: uppercase; }
         #spectral-label { 
             font-size: 0.55rem; letter-spacing: 4px; opacity: 0; 
-            transition: opacity 0.5s; color: #fff; margin-top: 5px;
+            transition: opacity 0.5s; color: #fff; margin-top: 8px;
         }
 
         .nav-links { 
             display: flex; flex-direction: column; gap: 10px; 
-            align-items: center; justify-content: center; /* Centered buttons */
+            align-items: center; justify-content: center;
             z-index: 10; width: 100%;
         }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
-            text-decoration: none; font-size: 0.8rem; padding: 8px 20px;
+            text-decoration: none; font-size: 0.8rem; padding: 10px 20px;
             border: 1px solid rgba(255,255,255,0.1); background: transparent; 
-            cursor: pointer; min-width: 190px; text-align: center;
-            position: relative; overflow: hidden;
+            cursor: pointer; min-width: 220px; text-align: center;
+            position: relative; overflow: hidden; outline: none;
+            user-select: none; -webkit-user-select: none;
         }
-        .nav-button.loading::before { 
-            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0; 
-            background: white; z-index: -1; animation: fill 1.3s linear forwards; 
+        /* Loading overlay controlled by JS width */
+        .load-progress {
+            position: absolute; left: 0; top: 0; height: 100%; width: 0%;
+            background: white; z-index: -1; transition: width 0.05s linear;
         }
-        @keyframes fill { from { width: 0; } to { width: 100%; } }
-        .nav-button.loading { color: black; }
+        .nav-button.active-load { color: black; border-color: white; }
 
         .audio-player { margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15; }
         .audio-ctrl { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; opacity: 0.6; }
@@ -113,6 +113,7 @@
             text-align: center; font-family: 'Courier New', monospace; font-size: 0.65rem;
             color: rgba(255,255,255,0.3); z-index: 10; scrollbar-width: none;
             mask-image: linear-gradient(transparent, white 20%, white 80%, transparent);
+            -webkit-mask-image: linear-gradient(transparent, white 20%, white 80%, transparent);
         }
         #playlist-container::-webkit-scrollbar { display: none; }
         .track-item { padding: 8px 0; transition: all 0.3s ease; border-bottom: 1px solid rgba(255,255,255,0.05); }
@@ -150,9 +151,18 @@
         </div>
         
         <div class="nav-links">
-            <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.zip">⬪ upsilon.zip ⬪</div>
+            <div class="nav-button" data-url="https://upsilon.dev">
+                <div class="load-progress"></div>
+                <span>⬪ upsilon.dev ⬪</span>
+            </div>
+            <div class="nav-button" data-url="https://upsilon.media">
+                <div class="load-progress"></div>
+                <span>⬪ upsilon.media ⬪</span>
+            </div>
+            <div class="nav-button" data-url="https://upsilon.zip">
+                <div class="load-progress"></div>
+                <span>⬪ upsilon.zip ⬪</span>
+            </div>
         </div>
 
         <div class="audio-player">
@@ -186,6 +196,51 @@
         let isUkrainianMode = false;
 
         const colors = ['#0033ff', '#ff5500', '#9d00ff', '#ff0000', '#00ff55'];
+
+        // --- Loading Logic ---
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            let progress = 0;
+            let interval = null;
+            let hapticDone = false;
+            const bar = btn.querySelector('.load-progress');
+
+            const startLoading = (e) => {
+                e.preventDefault();
+                btn.classList.add('active-load');
+                interval = setInterval(() => {
+                    progress += 2;
+                    bar.style.width = progress + '%';
+                    
+                    // Haptic at 50%
+                    if (progress >= 50 && !hapticDone) {
+                        if (navigator.vibrate) navigator.vibrate(40);
+                        hapticDone = true;
+                    }
+
+                    // Done at 100%
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        if (confirm(`Visit ${btn.dataset.url}?`)) {
+                            window.open(btn.dataset.url, '_blank');
+                        }
+                        resetLoading();
+                    }
+                }, 25);
+            };
+
+            const resetLoading = () => {
+                clearInterval(interval);
+                progress = 0;
+                hapticDone = false;
+                bar.style.width = '0%';
+                btn.classList.remove('active-load');
+            };
+
+            btn.addEventListener('mousedown', startLoading);
+            btn.addEventListener('touchstart', startLoading);
+            window.addEventListener('mouseup', resetLoading);
+            window.addEventListener('touchend', resetLoading);
+        });
 
         function createRing(color) {
             const ring = document.createElement('div');
@@ -290,15 +345,6 @@
             const x = (window.innerWidth / 2 - e.pageX) / 45;
             const y = (window.innerHeight / 2 - e.pageY) / 45;
             document.getElementById('target').style.transform = `rotateX(${y}deg) rotateY(${-x}deg)`;
-        });
-
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            let t;
-            btn.onmouseenter = () => {
-                btn.classList.add('loading');
-                t = setTimeout(() => { if(confirm("Visit?")) window.open(btn.dataset.url); btn.classList.remove('loading'); }, 1300);
-            };
-            btn.onmouseleave = () => { btn.classList.remove('loading'); clearTimeout(t); };
         });
 
         updatePlaylistUI();
