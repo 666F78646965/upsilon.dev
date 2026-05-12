@@ -51,6 +51,13 @@
         }
         .upsilon { color: black; font-size: 80px; font-weight: bold; transform: rotate(-45deg); pointer-events: none; }
 
+        .vibrate-active { animation: quick-vibrate 0.1s infinite; }
+        @keyframes quick-vibrate {
+            0% { transform: rotate(45deg) translate(0,0); }
+            50% { transform: rotate(45.5deg) translate(2px, -2px); }
+            100% { transform: rotate(45deg) translate(0,0); }
+        }
+
         .subtitle { margin: 50px 0 25px 0; font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-align: center; }
 
         .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
@@ -127,11 +134,10 @@
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
 
-        // Automatic playlist from GitHub
+        // IMPORTANT: Use RAW github links (raw.githubusercontent.com)
         const playlist = [
             'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track1.mp3',
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3',
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track3.mp3'
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3'
         ];
         let currentTrackIndex = 0;
         let loadTimer;
@@ -149,7 +155,16 @@
             setTimeout(() => ring.remove(), 3000);
         }
 
-        // Passive animation loop (Works when music is paused)
+        // TACTILE INTERACTION
+        const triggerInteraction = () => {
+            diamond.classList.add('vibrate-active');
+            for(let i=0; i<4; i++) setTimeout(() => createRing('white'), i * 100);
+            setTimeout(() => diamond.classList.remove('vibrate-active'), 400);
+        };
+        window.addEventListener('mousedown', triggerInteraction);
+        window.addEventListener('touchstart', triggerInteraction);
+
+        // Passive animation loop
         setInterval(() => {
             if (audio.paused) createRing('rgba(255,255,255,0.2)');
         }, 1500);
@@ -160,10 +175,9 @@
             target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(0)`;
         });
 
-        // Restore Loading Effects and Navigation functionality
+        // Navigation Buttons with Loading Effect
         document.querySelectorAll('.nav-button').forEach(btn => {
             const url = btn.getAttribute('data-url');
-            
             const startLoad = () => {
                 btn.classList.add('loading');
                 loadTimer = setTimeout(() => {
@@ -171,12 +185,10 @@
                     btn.classList.remove('loading');
                 }, 1300);
             };
-
             const cancelLoad = () => {
                 btn.classList.remove('loading');
                 clearTimeout(loadTimer);
             };
-
             btn.addEventListener('mouseenter', startLoad);
             btn.addEventListener('mouseleave', cancelLoad);
             btn.addEventListener('touchstart', (e) => { e.preventDefault(); startLoad(); });
@@ -189,7 +201,6 @@
                 initAudio();
                 audio.src = url;
                 audio.play();
-                audioCtx.resume();
             }
         });
 
@@ -206,11 +217,11 @@
             renderFrame();
         }
 
-        function playNext() {
+        function playTrack() {
             initAudio();
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             audio.src = playlist[currentTrackIndex];
-            audio.play().catch(e => console.log("Add valid GitHub MP3 links to the playlist array."));
+            audio.load();
+            audio.play().catch(e => console.log("CORS or Link Error: Check GitHub link format."));
         }
 
         function renderFrame() {
@@ -230,7 +241,7 @@
             bass /= 4; mid /= 8; high /= 20;
 
             let targetScale = 1 + (bass / 550);
-            currentScale += (targetScale - currentScale) * 0.1; // Smoother interpolation for mobile
+            currentScale += (targetScale - currentScale) * 0.1;
             diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
 
             let hue = (bass * 0.6 + mid * 1.1 + high * 2.2) % 360;
@@ -245,12 +256,22 @@
 
         playPauseBtn.addEventListener('click', () => {
             initAudio();
-            if (!audio.src) audio.src = playlist[currentTrackIndex];
-            audio.paused ? (audio.play(), audioCtx.resume()) : audio.pause();
+            if (!audio.src) {
+                playTrack();
+            } else {
+                audio.paused ? audio.play() : audio.pause();
+            }
         });
 
-        nextBtn.addEventListener('click', playNext);
-        audio.addEventListener('ended', playNext);
+        nextBtn.addEventListener('click', () => {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playTrack();
+        });
+
+        audio.addEventListener('ended', () => {
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playTrack();
+        });
     </script>
 </body>
 </html>
