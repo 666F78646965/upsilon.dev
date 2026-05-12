@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>upsilon.dev</title>
+    <title>upsilon.dev | Audio</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
@@ -13,6 +13,7 @@
             perspective: 1200px; touch-action: none;
         }
 
+        /* Brand & Headers */
         .brand-header {
             position: absolute; top: 25px; left: 25px;
             display: flex; flex-direction: column; gap: 5px; z-index: 10;
@@ -20,8 +21,7 @@
         .line1 { font-weight: bold; font-size: 1.1rem; }
         .line-mono { font-family: 'Courier New', monospace; font-size: 0.9rem; opacity: 0.8; }
 
-        .container { display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; }
-
+        /* Background Rings */
         .tunnel-container {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
@@ -38,6 +38,7 @@
             100% { transform: translate(-50%, -50%) rotate(45deg) scale(5); opacity: 0; }
         }
 
+        /* Central Diamond */
         .tilt-wrapper {
             transition: transform 0.2s ease-out; transform-style: preserve-3d;
             cursor: crosshair; z-index: 5; will-change: transform;
@@ -51,15 +52,17 @@
         }
         .upsilon { color: black; font-size: 80px; font-weight: bold; transform: rotate(-45deg); pointer-events: none; }
 
-        .vibrate-active { animation: quick-vibrate 0.1s infinite; }
+        /* Tactile Animation */
+        .vibrate-active { animation: quick-vibrate 0.1s 3; }
         @keyframes quick-vibrate {
-            0% { transform: rotate(45deg) translate(0,0); }
-            50% { transform: rotate(45.5deg) translate(2px, -2px); }
-            100% { transform: rotate(45deg) translate(0,0); }
+            0% { transform: rotate(45deg) scale(1); }
+            50% { transform: rotate(47deg) scale(0.95); }
+            100% { transform: rotate(45deg) scale(1); }
         }
 
         .subtitle { margin: 50px 0 25px 0; font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-align: center; }
 
+        /* Nav Buttons */
         .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
@@ -75,6 +78,7 @@
         .nav-button.loading::before { width: 100%; transition: width 1.3s linear; }
         .nav-button.loading { color: black; }
 
+        /* Audio Controls */
         .audio-player {
             margin-top: 30px; display: flex; align-items: center; gap: 25px; z-index: 15;
         }
@@ -83,14 +87,13 @@
             font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: 0.2s;
         }
         .audio-ctrl:hover { opacity: 1; transform: scale(1.1); }
-
+        
         #file-input { display: none; }
         .upload-label {
             font-family: 'Courier New', monospace; font-size: 0.7rem;
             border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px;
-            cursor: pointer; opacity: 0.6; transition: 0.2s;
+            cursor: pointer; opacity: 0.6;
         }
-        .upload-label:hover { opacity: 1; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
@@ -109,6 +112,7 @@
             </div>
         </div>
         <div class="subtitle">AI + HUMAN COLLABORATION</div>
+        
         <div class="nav-links">
             <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
             <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
@@ -116,8 +120,8 @@
         </div>
 
         <div class="audio-player">
-            <label for="file-input" class="upload-label">UPLOAD MP3</label>
-            <input type="file" id="file-input" accept="audio/*">
+            <label for="file-input" class="upload-label">ADD MUSIC +</label>
+            <input type="file" id="file-input" accept="audio/*" multiple>
             <button class="audio-ctrl" id="play-pause">⏯️</button>
             <button class="audio-ctrl" id="next-track">⏭️</button>
         </div>
@@ -126,7 +130,6 @@
     <audio id="audio-element" crossorigin="anonymous"></audio>
 
     <script>
-        const target = document.getElementById('target');
         const diamond = document.getElementById('main-diamond');
         const tunnel = document.getElementById('tunnel');
         const audio = document.getElementById('audio-element');
@@ -134,13 +137,13 @@
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
 
-        // IMPORTANT: Use RAW github links (raw.githubusercontent.com)
-        const playlist = [
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track1.mp3',
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3'
+        // Combined Playlist: Add your GitHub Raw URLs here
+        let playlist = [
+            'https://raw.githubusercontent.com/YourUser/YourRepo/main/song1.mp3',
+            'https://raw.githubusercontent.com/YourUser/YourRepo/main/song2.mp3'
         ];
-        let currentTrackIndex = 0;
-        let loadTimer;
+        
+        let currentIndex = 0;
         let audioCtx, analyser, dataArray, source;
         let isInitialized = false;
         let currentScale = 1;
@@ -155,55 +158,36 @@
             setTimeout(() => ring.remove(), 3000);
         }
 
-        // TACTILE INTERACTION
-        const triggerInteraction = () => {
+        // Tactile Push Interaction
+        function triggerTactile() {
             diamond.classList.add('vibrate-active');
-            for(let i=0; i<4; i++) setTimeout(() => createRing('white'), i * 100);
-            setTimeout(() => diamond.classList.remove('vibrate-active'), 400);
-        };
-        window.addEventListener('mousedown', triggerInteraction);
-        window.addEventListener('touchstart', triggerInteraction);
+            createRing('white');
+            setTimeout(() => diamond.classList.remove('vibrate-active'), 300);
+        }
+        diamond.parentElement.addEventListener('mousedown', triggerTactile);
+        diamond.parentElement.addEventListener('touchstart', triggerTactile);
 
-        // Passive animation loop
-        setInterval(() => {
-            if (audio.paused) createRing('rgba(255,255,255,0.2)');
-        }, 1500);
+        // Passive Rings when music is off
+        setInterval(() => { if (audio.paused) createRing('rgba(255,255,255,0.1)'); }, 2000);
 
-        window.addEventListener('mousemove', (e) => {
-            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 15;
-            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 15;
-            target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(0)`;
-        });
-
-        // Navigation Buttons with Loading Effect
+        // Navigation Loading Logic
         document.querySelectorAll('.nav-button').forEach(btn => {
+            let timer;
             const url = btn.getAttribute('data-url');
-            const startLoad = () => {
+            btn.onmouseenter = btn.ontouchstart = () => {
                 btn.classList.add('loading');
-                loadTimer = setTimeout(() => {
-                    if (confirm(`Open ${url}?`)) window.open(url, '_blank');
+                timer = setTimeout(() => {
+                    if(confirm("Navigate to " + url + "?")) window.open(url, '_blank');
                     btn.classList.remove('loading');
                 }, 1300);
             };
-            const cancelLoad = () => {
+            btn.onmouseleave = btn.ontouchend = () => {
                 btn.classList.remove('loading');
-                clearTimeout(loadTimer);
+                clearTimeout(timer);
             };
-            btn.addEventListener('mouseenter', startLoad);
-            btn.addEventListener('mouseleave', cancelLoad);
-            btn.addEventListener('touchstart', (e) => { e.preventDefault(); startLoad(); });
-            btn.addEventListener('touchend', cancelLoad);
         });
 
-        fileInput.addEventListener('change', function() {
-            if (this.files.length > 0) {
-                const url = URL.createObjectURL(this.files[0]);
-                initAudio();
-                audio.src = url;
-                audio.play();
-            }
-        });
-
+        // Initialize Web Audio
         function initAudio() {
             if (isInitialized) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -217,11 +201,30 @@
             renderFrame();
         }
 
-        function playTrack() {
+        // Handle Multiple File Uploads
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                playlist.push(URL.createObjectURL(file));
+            });
+            if (audio.paused) playCurrent();
+        });
+
+        function playCurrent() {
             initAudio();
-            audio.src = playlist[currentTrackIndex];
+            if (playlist.length === 0) return;
+            audio.src = playlist[currentIndex];
             audio.load();
-            audio.play().catch(e => console.log("CORS or Link Error: Check GitHub link format."));
+            audio.play().catch(err => {
+                console.error("Playback failed. Check GitHub URLs.", err);
+                // Move to next if current fails
+                setTimeout(playNext, 1000);
+            });
+        }
+
+        function playNext() {
+            currentIndex = (currentIndex + 1) % playlist.length;
+            playCurrent();
         }
 
         function renderFrame() {
@@ -233,44 +236,36 @@
             }
 
             analyser.getByteFrequencyData(dataArray);
-            let bass = 0, mid = 0, high = 0;
-            for (let i = 0; i < 4; i++) bass += dataArray[i];
-            for (let i = 8; i < 16; i++) mid += dataArray[i];
-            for (let i = 20; i < 40; i++) high += dataArray[i];
-            
-            bass /= 4; mid /= 8; high /= 20;
+            let bass = dataArray[2]; 
+            let mid = dataArray[10];
 
-            let targetScale = 1 + (bass / 550);
-            currentScale += (targetScale - currentScale) * 0.1;
+            let targetScale = 1 + (bass / 500);
+            currentScale += (targetScale - currentScale) * 0.15;
             diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
 
-            let hue = (bass * 0.6 + mid * 1.1 + high * 2.2) % 360;
-            let dynamicColor = `hsl(${hue}, 85%, 65%)`;
+            // High Color Variation
+            let hue = (bass + mid) % 360;
+            let dynamicColor = `hsl(${hue}, 90%, 60%)`;
 
-            const now = Date.now();
-            if (bass > 190 && now - lastRingTime > 140) {
+            if (bass > 195 && Date.now() - lastRingTime > 150) {
                 createRing(dynamicColor);
-                lastRingTime = now;
+                lastRingTime = Date.now();
             }
         }
 
-        playPauseBtn.addEventListener('click', () => {
-            initAudio();
-            if (!audio.src) {
-                playTrack();
-            } else {
-                audio.paused ? audio.play() : audio.pause();
-            }
-        });
+        playPauseBtn.onclick = () => {
+            if (!audio.src && playlist.length > 0) playCurrent();
+            else audio.paused ? audio.play() : audio.pause();
+        };
 
-        nextBtn.addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            playTrack();
-        });
+        nextBtn.onclick = playNext;
+        audio.onended = playNext; // Continuous play logic
 
-        audio.addEventListener('ended', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-            playTrack();
+        // Tilt effect
+        window.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.pageX) / 20;
+            const y = (window.innerHeight / 2 - e.pageY) / 20;
+            document.getElementById('target').style.transform = `rotateX(${y}deg) rotateY(${-x}deg)`;
         });
     </script>
 </body>
