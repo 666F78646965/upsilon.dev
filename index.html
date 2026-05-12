@@ -59,7 +59,7 @@
             text-decoration: none; font-size: 0.85rem; padding: 8px 20px;
             position: relative; border: 1px solid rgba(255,255,255,0.3);
             background: transparent; cursor: pointer; transition: color 0.2s;
-            overflow: hidden;
+            overflow: hidden; min-width: 180px; text-align: center;
         }
         .nav-button::before {
             content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0;
@@ -105,6 +105,7 @@
         <div class="nav-links">
             <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
             <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
+            <div class="nav-button" data-url="https://upsilon.zip">⬪ upsilon.zip ⬪</div>
         </div>
 
         <div class="audio-player">
@@ -126,9 +127,11 @@
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
 
-        // Update these URLs with your GitHub Raw links
+        // Automatic playlist from GitHub
         const playlist = [
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track1.mp3'
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track1.mp3',
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3',
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track3.mp3'
         ];
         let currentTrackIndex = 0;
         let loadTimer;
@@ -152,25 +155,32 @@
         }, 1500);
 
         window.addEventListener('mousemove', (e) => {
-            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 20;
-            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 20;
+            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 15;
+            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 15;
             target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(0)`;
         });
 
-        // Navigation Buttons with Loading Effect
+        // Restore Loading Effects and Navigation functionality
         document.querySelectorAll('.nav-button').forEach(btn => {
             const url = btn.getAttribute('data-url');
-            btn.addEventListener('mouseenter', () => {
+            
+            const startLoad = () => {
                 btn.classList.add('loading');
                 loadTimer = setTimeout(() => {
                     if (confirm(`Open ${url}?`)) window.open(url, '_blank');
                     btn.classList.remove('loading');
                 }, 1300);
-            });
-            btn.addEventListener('mouseleave', () => {
+            };
+
+            const cancelLoad = () => {
                 btn.classList.remove('loading');
                 clearTimeout(loadTimer);
-            });
+            };
+
+            btn.addEventListener('mouseenter', startLoad);
+            btn.addEventListener('mouseleave', cancelLoad);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); startLoad(); });
+            btn.addEventListener('touchend', cancelLoad);
         });
 
         fileInput.addEventListener('change', function() {
@@ -200,7 +210,7 @@
             initAudio();
             currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
             audio.src = playlist[currentTrackIndex];
-            audio.play().catch(() => {});
+            audio.play().catch(e => console.log("Add valid GitHub MP3 links to the playlist array."));
         }
 
         function renderFrame() {
@@ -219,16 +229,15 @@
             
             bass /= 4; mid /= 8; high /= 20;
 
-            let targetScale = 1 + (bass / 500);
-            currentScale += (targetScale - currentScale) * 0.15;
+            let targetScale = 1 + (bass / 550);
+            currentScale += (targetScale - currentScale) * 0.1; // Smoother interpolation for mobile
             diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
 
-            // High colored variation logic
-            let hue = (bass * 0.5 + mid * 1.2 + high * 2) % 360;
-            let dynamicColor = `hsl(${hue}, 90%, 65%)`;
+            let hue = (bass * 0.6 + mid * 1.1 + high * 2.2) % 360;
+            let dynamicColor = `hsl(${hue}, 85%, 65%)`;
 
             const now = Date.now();
-            if (bass > 185 && now - lastRingTime > 130) {
+            if (bass > 190 && now - lastRingTime > 140) {
                 createRing(dynamicColor);
                 lastRingTime = now;
             }
