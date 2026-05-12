@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>upsilon.dev</title>
     <style>
         body, html {
@@ -20,7 +20,7 @@
         .line1 { font-weight: bold; font-size: 1.1rem; }
         .line-mono { font-family: 'Courier New', monospace; font-size: 0.9rem; opacity: 0.8; }
 
-        .container { display: flex; flex-direction: column; align-items: center; position: relative; }
+        .container { display: flex; flex-direction: column; align-items: center; position: relative; width: 100%; }
 
         .tunnel-container {
             position: absolute; top: 50%; left: 50%;
@@ -31,75 +31,52 @@
             border: 1.5px solid white; background: transparent;
             transform: translate(-50%, -50%) rotate(45deg) scale(1);
             will-change: transform, opacity;
-            animation: wave-expand 3s forwards linear;
+            animation: wave-expand 2.5s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         @keyframes wave-expand {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.7; }
-            100% { transform: translate(-50%, -50%) rotate(45deg) scale(5); opacity: 0; }
+            0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) rotate(45deg) scale(4); opacity: 0; }
         }
 
         .tilt-wrapper {
-            transition: transform 0.1s ease-out; transform-style: preserve-3d;
-            cursor: crosshair; z-index: 5;
+            transition: transform 0.2s ease-out; transform-style: preserve-3d;
+            cursor: crosshair; z-index: 5; will-change: transform;
         }
         .diamond {
-            width: 160px; height: 160px; background-color: white;
+            width: 140px; height: 140px; background-color: white;
             transform: rotate(45deg); display: flex;
             justify-content: center; align-items: center;
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
+            -webkit-backface-visibility: hidden;
         }
-        .upsilon { color: black; font-size: 100px; font-weight: bold; transform: rotate(-45deg); margin-top: -8px; pointer-events: none; }
+        .upsilon { color: black; font-size: 80px; font-weight: bold; transform: rotate(-45deg); pointer-events: none; }
 
-        .vibrate-active { animation: quick-vibrate 0.1s infinite; }
-        @keyframes quick-vibrate {
-            0% { transform: rotate(45deg) translate(0,0); }
-            50% { transform: rotate(45.5deg) translate(2px, -2px); }
-            100% { transform: rotate(45deg) translate(0,0); }
-        }
+        .subtitle { margin: 50px 0 25px 0; font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-align: center; }
 
-        .subtitle { margin: 60px 0 30px 0; font-size: 0.7rem; letter-spacing: 10px; opacity: 0.8; text-align: center; }
-
-        .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
+        .nav-links { display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 10; }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
-            text-decoration: none; font-size: 0.85rem; padding: 8px 20px;
-            position: relative; border: 1px solid rgba(255,255,255,0.3);
-            background: transparent; cursor: pointer; transition: color 0.2s;
-            overflow: hidden;
+            text-decoration: none; font-size: 0.8rem; padding: 6px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent; cursor: pointer; transition: 0.2s;
         }
-        .nav-button::before {
-            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0;
-            background: white; z-index: -1; transition: none;
-        }
-        .nav-button.loading::before { width: 100%; transition: width 1s linear; }
-        .nav-button.loading { color: black; }
+        .nav-button:hover { background: white; color: black; }
 
         .audio-player {
-            margin-top: 30px;
-            display: flex;
-            align-items: center;
-            gap: 25px;
-            z-index: 15;
+            margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15;
         }
         .audio-ctrl {
             background: none; border: none; color: white;
-            font-size: 1.5rem; cursor: pointer; opacity: 0.6;
-            transition: opacity 0.2s, transform 0.1s;
+            font-size: 1.4rem; cursor: pointer; opacity: 0.6;
         }
         .audio-ctrl:hover { opacity: 1; }
-        .audio-ctrl:active { transform: scale(0.9); }
 
         #file-input { display: none; }
         .upload-label {
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-            border: 1px solid rgba(255,255,255,0.4);
-            padding: 5px 10px;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: 0.2s;
+            font-family: 'Courier New', monospace; font-size: 0.6rem;
+            border: 1px solid rgba(255,255,255,0.3); padding: 4px 8px;
+            cursor: pointer; opacity: 0.5;
         }
-        .upload-label:hover { opacity: 1; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
@@ -119,9 +96,8 @@
         </div>
         <div class="subtitle">AI + HUMAN COLLABORATION</div>
         <div class="nav-links">
-            <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
-            <div class="nav-button" data-url="https://upsilon.zip">⬪ upsilon.zip ⬪</div>
+            <div class="nav-button" onclick="window.open('https://upsilon.dev','_blank')">⬪ upsilon.dev ⬪</div>
+            <div class="nav-button" onclick="window.open('https://upsilon.media','_blank')">⬪ upsilon.media ⬪</div>
         </div>
 
         <div class="audio-player">
@@ -143,7 +119,14 @@
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
 
-        let loadTimer;
+        // Add your GitHub Raw MP3 URLs here
+        const playlist = [
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/raindrop.mp3',
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3',
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track3.mp3'
+        ];
+        let currentTrackIndex = 0;
+
         let audioCtx, analyser, dataArray, source;
         let isInitialized = false;
         let currentScale = 1;
@@ -153,51 +136,24 @@
             const ring = document.createElement('div');
             ring.className = 'ring';
             ring.style.borderColor = color;
-            ring.style.boxShadow = `0 0 15px ${color}`;
+            ring.style.boxShadow = `0 0 10px ${color}`;
             tunnel.appendChild(ring);
-            setTimeout(() => ring.remove(), 3000);
+            setTimeout(() => ring.remove(), 2500);
         }
-        
-        setInterval(() => { if(audio.paused) createRing('rgba(255,255,255,0.3)'); }, 1500);
 
         window.addEventListener('mousemove', (e) => {
-            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 30;
-            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 30;
-            target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 15;
+            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 15;
+            target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(0)`;
         });
 
-        const triggerInteraction = () => {
-            diamond.classList.add('vibrate-active');
-            for(let i=0; i<4; i++) setTimeout(() => createRing('white'), i * 100);
-            setTimeout(() => diamond.classList.remove('vibrate-active'), 400);
-        };
-        window.addEventListener('mousedown', triggerInteraction);
-        window.addEventListener('touchstart', triggerInteraction);
-
         fileInput.addEventListener('change', function() {
-            const files = this.files;
-            if (files.length > 0) {
-                const url = URL.createObjectURL(files[0]);
+            if (this.files.length > 0) {
+                const url = URL.createObjectURL(this.files[0]);
                 initAudio();
                 audio.src = url;
                 audio.play();
-                audioCtx.resume();
             }
-        });
-
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            const url = btn.getAttribute('data-url');
-            btn.addEventListener('mouseenter', () => {
-                btn.classList.add('loading');
-                loadTimer = setTimeout(() => {
-                    if (confirm(`Open ${url}?`)) window.open(url, '_blank');
-                    btn.classList.remove('loading');
-                }, 1300);
-            });
-            btn.addEventListener('mouseleave', () => {
-                btn.classList.remove('loading');
-                clearTimeout(loadTimer);
-            });
         });
 
         function initAudio() {
@@ -207,52 +163,59 @@
             source = audioCtx.createMediaElementSource(audio);
             source.connect(analyser);
             analyser.connect(audioCtx.destination);
-            analyser.fftSize = 256;
+            analyser.fftSize = 128; // Smaller FFT for mobile performance
             dataArray = new Uint8Array(analyser.frequencyBinCount);
             isInitialized = true;
             renderFrame();
+        }
+
+        function playNext() {
+            initAudio();
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            audio.src = playlist[currentTrackIndex];
+            audio.play().catch(() => {});
         }
 
         function renderFrame() {
             requestAnimationFrame(renderFrame);
             if (!isInitialized || audio.paused) {
                 currentScale += (1 - currentScale) * 0.1;
-                diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+                diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
                 return;
             }
 
             analyser.getByteFrequencyData(dataArray);
             let bass = 0, mid = 0, high = 0;
-            for (let i = 0; i < 6; i++) bass += dataArray[i];
-            for (let i = 10; i < 40; i++) mid += dataArray[i];
-            for (let i = 50; i < 100; i++) high += dataArray[i];
+            for (let i = 0; i < 4; i++) bass += dataArray[i];
+            for (let i = 8; i < 16; i++) mid += dataArray[i];
+            for (let i = 20; i < 40; i++) high += dataArray[i];
             
-            bass /= 6; mid /= 30; high /= 50;
-            currentScale += (1 + (bass / 450) - currentScale) * 0.2;
-            diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+            bass /= 4; mid /= 8; high /= 20;
 
-            let r = Math.min(255, (bass * 0.4) + (high * 2.2));
-            let g = Math.min(255, (mid * 0.4) + (high * 1.2));
-            let b = Math.min(255, (bass * 2.0) + (mid * 1.8));
+            // Smoother scaling for mobile
+            let targetScale = 1 + (bass / 500);
+            currentScale += (targetScale - currentScale) * 0.15;
+            diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
+
+            // High variation color logic (HSL for more vibrancy)
+            let hue = (bass + mid + high) % 360; 
+            let dynamicColor = `hsl(${hue}, 80%, 60%)`;
             
             const now = Date.now();
-            if (bass > 190 && now - lastRingTime > 120) {
-                createRing(`rgb(${r}, ${g}, ${b})`);
+            if (bass > 180 && now - lastRingTime > 150) {
+                createRing(dynamicColor);
                 lastRingTime = now;
             }
         }
 
         playPauseBtn.addEventListener('click', () => {
             initAudio();
-            if (!audio.src) audio.src = 'raindrop.mp3';
-            audio.paused ? (audio.play(), audioCtx.resume()) : audio.pause();
+            if (!audio.src) audio.src = playlist[currentTrackIndex];
+            audio.paused ? audio.play() : audio.pause();
         });
 
-        nextBtn.addEventListener('click', () => {
-            initAudio();
-            if (!audio.src) audio.src = 'raindrop.mp3';
-            audio.play();
-        });
+        nextBtn.addEventListener('click', playNext);
+        audio.addEventListener('ended', playNext);
     </script>
 </body>
 </html>
