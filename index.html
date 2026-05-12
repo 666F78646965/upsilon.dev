@@ -8,8 +8,6 @@
         :root {
             --glitch-col: rgba(255, 255, 255, 0.2);
             --prism-hue: 260;
-            --aberration: 0px;
-            /* Standard Palette: Blue, Orange, Violet, Red, Green */
             --palette: #0022ff, #ff4500, #8b00ff, #ff0000, #00ff44;
         }
         body, html {
@@ -40,7 +38,7 @@
             animation: wave-expand 2.5s forwards cubic-bezier(0.1, 0.8, 0.2, 1);
         }
         @keyframes wave-expand {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.8); opacity: 1; filter: brightness(1.5); }
+            0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.8); opacity: 1; }
             100% { transform: translate(-50%, -50%) rotate(45deg) scale(8); opacity: 0; filter: blur(2px); }
         }
 
@@ -49,11 +47,10 @@
             z-index: 5; will-change: transform;
         }
 
-        /* PRISM DIAMOND */
         .diamond {
             width: 145px; height: 145px; 
-            background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
-            backdrop-filter: blur(15px) saturate(150%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             transform: rotate(45deg) translateZ(0); 
@@ -68,42 +65,62 @@
             animation: rotate-prism 8s infinite linear;
             pointer-events: none;
         }
-
         @keyframes rotate-prism { 100% { transform: rotate(360deg); } }
 
         .upsilon { 
             color: white; font-size: 85px; font-weight: bold; 
             transform: rotate(-45deg); pointer-events: none;
-            text-shadow: var(--aberration) 0 1px rgba(255,0,80,0.8), calc(var(--aberration) * -1) 0 1px rgba(0,255,255,0.8);
             z-index: 2;
+            /* Removed red/green aberration */
+            text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
 
-        .subtitle { margin: 40px 0 20px 0; font-size: 0.6rem; letter-spacing: 10px; opacity: 0.4; }
+        .subtitle-area { 
+            margin: 40px 0 20px 0; 
+            text-align: center;
+            height: 30px;
+        }
+        .subtitle { font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-transform: uppercase; }
+        #spectral-label { 
+            font-size: 0.55rem; letter-spacing: 4px; opacity: 0; 
+            transition: opacity 0.5s; color: #fff; margin-top: 5px;
+        }
 
-        .nav-links { display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 10; }
+        .nav-links { 
+            display: flex; flex-direction: column; gap: 10px; 
+            align-items: center; justify-content: center; /* Centered buttons */
+            z-index: 10; width: 100%;
+        }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
             text-decoration: none; font-size: 0.8rem; padding: 8px 20px;
-            border: 1px solid rgba(255,255,255,0.1); background: transparent; cursor: pointer; min-width: 190px;
+            border: 1px solid rgba(255,255,255,0.1); background: transparent; 
+            cursor: pointer; min-width: 190px; text-align: center;
+            position: relative; overflow: hidden;
         }
-        .nav-button.loading::before { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0; background: white; z-index: -1; animation: fill 1.3s linear forwards; }
-        @keyframes fill { to { width: 100%; } }
-        .nav-button.loading { color: black; position: relative; }
+        .nav-button.loading::before { 
+            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0; 
+            background: white; z-index: -1; animation: fill 1.3s linear forwards; 
+        }
+        @keyframes fill { from { width: 0; } to { width: 100%; } }
+        .nav-button.loading { color: black; }
 
         .audio-player { margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15; }
         .audio-ctrl { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; opacity: 0.6; }
 
         #playlist-container {
-            margin-top: 20px; max-height: 80px; overflow-y: auto; width: 300px;
-            text-align: center; font-family: 'Courier New', monospace; font-size: 0.6rem;
+            margin-top: 20px; max-height: 90px; overflow-y: auto; width: 300px;
+            text-align: center; font-family: 'Courier New', monospace; font-size: 0.65rem;
             color: rgba(255,255,255,0.3); z-index: 10; scrollbar-width: none;
+            mask-image: linear-gradient(transparent, white 20%, white 80%, transparent);
         }
-        .track-item.active { color: #fff; font-weight: bold; opacity: 1; }
+        #playlist-container::-webkit-scrollbar { display: none; }
+        .track-item { padding: 8px 0; transition: all 0.3s ease; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .track-item.active { color: #fff; font-weight: bold; opacity: 1; transform: scale(1.05); }
 
         #file-input { display: none; }
         .upload-label { font-family: 'Courier New', monospace; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; cursor: pointer; }
 
-        /* EASTER EGG FOOTER */
         #ua-footer {
             position: absolute; bottom: 20px; width: 100%; text-align: center;
             font-family: 'Inter', sans-serif; font-weight: bold; font-size: 0.9rem;
@@ -126,7 +143,11 @@
         <div class="tilt-wrapper" id="target">
             <div class="diamond" id="main-diamond"><span class="upsilon">&Upsilon;</span></div>
         </div>
-        <div class="subtitle">Spectral Core</div>
+        
+        <div class="subtitle-area">
+            <div class="subtitle">AI + HUMAN COLLABORATION</div>
+            <div id="spectral-label">SPECTRAL CORE</div>
+        </div>
         
         <div class="nav-links">
             <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
@@ -155,6 +176,7 @@
         const fileInput = document.getElementById('file-input');
         const playlistUI = document.getElementById('playlist-container');
         const uaFooter = document.getElementById('ua-footer');
+        const spectralLabel = document.getElementById('spectral-label');
 
         let playlist = [{ name: "🌫️leavemealone.mp3", url: "https://raw.githubusercontent.com/666F78646965/upsilon.dev/main/leavemealone.mp3" }];
         let currentIndex = 0;
@@ -185,6 +207,7 @@
                 item.className = 'track-item' + (index === currentIndex ? ' active' : '');
                 item.innerText = track.name.toUpperCase();
                 playlistUI.appendChild(item);
+                if(index === currentIndex) item.scrollIntoView({ behavior: 'smooth', block: 'center' });
             });
         }
 
@@ -212,12 +235,10 @@
             initAudio();
             const track = playlist[currentIndex];
             isUkrainianMode = detectCyrillic(track.name);
-            
-            uaFooter.style.display = (isUkrainianMode && !audio.paused) ? 'block' : 'none';
-            
             audio.src = track.url;
             audio.play().catch(() => {});
             updatePlaylistUI();
+            spectralLabel.style.opacity = "0.6";
         }
 
         function playNext() {
@@ -230,6 +251,7 @@
             requestAnimationFrame(renderFrame);
             if (!isInitialized || audio.paused) {
                 uaFooter.style.display = 'none';
+                spectralLabel.style.opacity = "0";
                 currentScale += (1 - currentScale) * 0.1;
                 diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
                 return;
@@ -241,19 +263,15 @@
             diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
             
             document.documentElement.style.setProperty('--prism-hue', bass % 360);
-            document.documentElement.style.setProperty('--aberration', (bass / 35) + 'px');
 
             if (bass > 200 && Date.now() - lastRingTime > 160) {
-                let ringCol;
-                if (isUkrainianMode) {
-                    // Flashy Blue/Cyan and Yellow
-                    ringCol = (Math.random() > 0.5) ? '#00e5ff' : '#ffff00';
-                    uaFooter.style.display = 'block';
-                } else {
-                    ringCol = colors[Math.floor(Math.random() * colors.length)];
-                }
+                let ringCol = isUkrainianMode ? 
+                    ((Math.random() > 0.5) ? '#00e5ff' : '#ffff00') : 
+                    colors[Math.floor(Math.random() * colors.length)];
+                
                 createRing(ringCol);
                 lastRingTime = Date.now();
+                if(isUkrainianMode) uaFooter.style.display = 'block';
             }
         }
 
@@ -282,6 +300,8 @@
             };
             btn.onmouseleave = () => { btn.classList.remove('loading'); clearTimeout(t); };
         });
+
+        updatePlaylistUI();
     </script>
 </body>
 </html>
