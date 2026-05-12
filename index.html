@@ -31,11 +31,11 @@
             border: 1.5px solid white; background: transparent;
             transform: translate(-50%, -50%) rotate(45deg) scale(1);
             will-change: transform, opacity;
-            animation: wave-expand 2.5s forwards cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            animation: wave-expand 3s forwards linear;
         }
         @keyframes wave-expand {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.6; }
-            100% { transform: translate(-50%, -50%) rotate(45deg) scale(4); opacity: 0; }
+            0% { transform: translate(-50%, -50%) rotate(45deg) scale(1); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) rotate(45deg) scale(5); opacity: 0; }
         }
 
         .tilt-wrapper {
@@ -44,39 +44,46 @@
         }
         .diamond {
             width: 140px; height: 140px; background-color: white;
-            transform: rotate(45deg); display: flex;
+            transform: rotate(45deg) translateZ(0); display: flex;
             justify-content: center; align-items: center;
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.15);
-            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
         }
         .upsilon { color: black; font-size: 80px; font-weight: bold; transform: rotate(-45deg); pointer-events: none; }
 
         .subtitle { margin: 50px 0 25px 0; font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-align: center; }
 
-        .nav-links { display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 10; }
+        .nav-links { display: flex; flex-direction: column; gap: 12px; align-items: center; z-index: 10; }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
-            text-decoration: none; font-size: 0.8rem; padding: 6px 16px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: transparent; cursor: pointer; transition: 0.2s;
+            text-decoration: none; font-size: 0.85rem; padding: 8px 20px;
+            position: relative; border: 1px solid rgba(255,255,255,0.3);
+            background: transparent; cursor: pointer; transition: color 0.2s;
+            overflow: hidden;
         }
-        .nav-button:hover { background: white; color: black; }
+        .nav-button::before {
+            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0;
+            background: white; z-index: -1; transition: none;
+        }
+        .nav-button.loading::before { width: 100%; transition: width 1.3s linear; }
+        .nav-button.loading { color: black; }
 
         .audio-player {
-            margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15;
+            margin-top: 30px; display: flex; align-items: center; gap: 25px; z-index: 15;
         }
         .audio-ctrl {
             background: none; border: none; color: white;
-            font-size: 1.4rem; cursor: pointer; opacity: 0.6;
+            font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: 0.2s;
         }
-        .audio-ctrl:hover { opacity: 1; }
+        .audio-ctrl:hover { opacity: 1; transform: scale(1.1); }
 
         #file-input { display: none; }
         .upload-label {
-            font-family: 'Courier New', monospace; font-size: 0.6rem;
-            border: 1px solid rgba(255,255,255,0.3); padding: 4px 8px;
-            cursor: pointer; opacity: 0.5;
+            font-family: 'Courier New', monospace; font-size: 0.7rem;
+            border: 1px solid rgba(255,255,255,0.4); padding: 5px 10px;
+            cursor: pointer; opacity: 0.6; transition: 0.2s;
         }
+        .upload-label:hover { opacity: 1; background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
@@ -96,8 +103,8 @@
         </div>
         <div class="subtitle">AI + HUMAN COLLABORATION</div>
         <div class="nav-links">
-            <div class="nav-button" onclick="window.open('https://upsilon.dev','_blank')">⬪ upsilon.dev ⬪</div>
-            <div class="nav-button" onclick="window.open('https://upsilon.media','_blank')">⬪ upsilon.media ⬪</div>
+            <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
+            <div class="nav-button" data-url="https://upsilon.media">⬪ upsilon.media ⬪</div>
         </div>
 
         <div class="audio-player">
@@ -119,14 +126,12 @@
         const playPauseBtn = document.getElementById('play-pause');
         const nextBtn = document.getElementById('next-track');
 
-        // Add your GitHub Raw MP3 URLs here
+        // Update these URLs with your GitHub Raw links
         const playlist = [
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/raindrop.mp3',
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track2.mp3',
-            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track3.mp3'
+            'https://raw.githubusercontent.com/YourUsername/YourRepo/main/track1.mp3'
         ];
         let currentTrackIndex = 0;
-
+        let loadTimer;
         let audioCtx, analyser, dataArray, source;
         let isInitialized = false;
         let currentScale = 1;
@@ -136,15 +141,36 @@
             const ring = document.createElement('div');
             ring.className = 'ring';
             ring.style.borderColor = color;
-            ring.style.boxShadow = `0 0 10px ${color}`;
+            ring.style.boxShadow = `0 0 15px ${color}`;
             tunnel.appendChild(ring);
-            setTimeout(() => ring.remove(), 2500);
+            setTimeout(() => ring.remove(), 3000);
         }
 
+        // Passive animation loop (Works when music is paused)
+        setInterval(() => {
+            if (audio.paused) createRing('rgba(255,255,255,0.2)');
+        }, 1500);
+
         window.addEventListener('mousemove', (e) => {
-            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 15;
-            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 15;
+            const tiltX = (0.5 - (e.clientY / window.innerHeight)) * 20;
+            const tiltY = ((e.clientX / window.innerWidth) - 0.5) * 20;
             target.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateZ(0)`;
+        });
+
+        // Navigation Buttons with Loading Effect
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            const url = btn.getAttribute('data-url');
+            btn.addEventListener('mouseenter', () => {
+                btn.classList.add('loading');
+                loadTimer = setTimeout(() => {
+                    if (confirm(`Open ${url}?`)) window.open(url, '_blank');
+                    btn.classList.remove('loading');
+                }, 1300);
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.classList.remove('loading');
+                clearTimeout(loadTimer);
+            });
         });
 
         fileInput.addEventListener('change', function() {
@@ -153,6 +179,7 @@
                 initAudio();
                 audio.src = url;
                 audio.play();
+                audioCtx.resume();
             }
         });
 
@@ -163,7 +190,7 @@
             source = audioCtx.createMediaElementSource(audio);
             source.connect(analyser);
             analyser.connect(audioCtx.destination);
-            analyser.fftSize = 128; // Smaller FFT for mobile performance
+            analyser.fftSize = 128; 
             dataArray = new Uint8Array(analyser.frequencyBinCount);
             isInitialized = true;
             renderFrame();
@@ -192,17 +219,16 @@
             
             bass /= 4; mid /= 8; high /= 20;
 
-            // Smoother scaling for mobile
             let targetScale = 1 + (bass / 500);
             currentScale += (targetScale - currentScale) * 0.15;
             diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
 
-            // High variation color logic (HSL for more vibrancy)
-            let hue = (bass + mid + high) % 360; 
-            let dynamicColor = `hsl(${hue}, 80%, 60%)`;
-            
+            // High colored variation logic
+            let hue = (bass * 0.5 + mid * 1.2 + high * 2) % 360;
+            let dynamicColor = `hsl(${hue}, 90%, 65%)`;
+
             const now = Date.now();
-            if (bass > 180 && now - lastRingTime > 150) {
+            if (bass > 185 && now - lastRingTime > 130) {
                 createRing(dynamicColor);
                 lastRingTime = now;
             }
@@ -211,7 +237,7 @@
         playPauseBtn.addEventListener('click', () => {
             initAudio();
             if (!audio.src) audio.src = playlist[currentTrackIndex];
-            audio.paused ? audio.play() : audio.pause();
+            audio.paused ? (audio.play(), audioCtx.resume()) : audio.pause();
         });
 
         nextBtn.addEventListener('click', playNext);
