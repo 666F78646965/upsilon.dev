@@ -98,7 +98,6 @@
             position: relative; overflow: hidden; outline: none;
             user-select: none; -webkit-user-select: none;
         }
-        /* Loading overlay controlled by JS width */
         .load-progress {
             position: absolute; left: 0; top: 0; height: 100%; width: 0%;
             background: white; z-index: -1; transition: width 0.05s linear;
@@ -197,11 +196,10 @@
 
         const colors = ['#0033ff', '#ff5500', '#9d00ff', '#ff0000', '#00ff55'];
 
-        // --- Loading Logic ---
-        document.querySelectorAll('.nav-button').forEach(btn => {
+        // --- Improved Loading & Haptic Logic ---
+        document.querySelectorAll('.nav-links .nav-button').forEach(btn => {
             let progress = 0;
             let interval = null;
-            let hapticDone = false;
             const bar = btn.querySelector('.load-progress');
 
             const startLoading = (e) => {
@@ -210,34 +208,33 @@
                 interval = setInterval(() => {
                     progress += 2;
                     bar.style.width = progress + '%';
-                    
-                    // Haptic at 50%
-                    if (progress >= 50 && !hapticDone) {
-                        if (navigator.vibrate) navigator.vibrate(40);
-                        hapticDone = true;
-                    }
 
-                    // Done at 100%
                     if (progress >= 100) {
                         clearInterval(interval);
-                        if (confirm(`Visit ${btn.dataset.url}?`)) {
-                            window.open(btn.dataset.url, '_blank');
+                        // Trigger Haptic Vibration exactly when popup opens
+                        if (window.navigator && window.navigator.vibrate) {
+                            window.navigator.vibrate([60]); 
                         }
-                        resetLoading();
+                        
+                        setTimeout(() => {
+                            if (confirm(`Visit ${btn.dataset.url}?`)) {
+                                window.open(btn.dataset.url, '_blank');
+                            }
+                            resetLoading();
+                        }, 50);
                     }
-                }, 25);
+                }, 20);
             };
 
             const resetLoading = () => {
                 clearInterval(interval);
                 progress = 0;
-                hapticDone = false;
                 bar.style.width = '0%';
                 btn.classList.remove('active-load');
             };
 
             btn.addEventListener('mousedown', startLoading);
-            btn.addEventListener('touchstart', startLoading);
+            btn.addEventListener('touchstart', startLoading, {passive: false});
             window.addEventListener('mouseup', resetLoading);
             window.addEventListener('touchend', resetLoading);
         });
@@ -268,15 +265,17 @@
 
         function initAudio() {
             if (isInitialized) return;
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyser = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaElementSource(audio);
-            source.connect(analyser);
-            analyser.connect(audioCtx.destination);
-            analyser.fftSize = 128;
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-            isInitialized = true;
-            renderFrame();
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioCtx.destination);
+                analyser.fftSize = 128;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+                isInitialized = true;
+                renderFrame();
+            } catch(e) { console.error("Audio init failed", e); }
         }
 
         fileInput.onchange = (e) => {
