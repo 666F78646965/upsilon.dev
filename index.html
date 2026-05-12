@@ -7,10 +7,14 @@
     <style>
         :root {
             --glitch-col: rgba(255, 255, 255, 0.2);
+            --prism-hue: 260;
+            --aberration: 0px;
+            /* Standard Palette: Blue, Orange, Violet, Red, Green */
+            --palette: #0022ff, #ff4500, #8b00ff, #ff0000, #00ff44;
         }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #050505; color: white;
+            background-color: #020202; color: white;
             display: flex; justify-content: center; align-items: center;
             font-family: 'Inter', sans-serif; overflow: hidden;
             perspective: 1200px; touch-action: none;
@@ -27,103 +31,86 @@
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
         }
+
         .ring {
             position: absolute; width: 160px; height: 160px;
-            border: 1px solid white; background: transparent;
-            transform: translate(-50%, -50%) rotate(45deg) scale(1);
+            border: 2px solid white; background: transparent;
+            transform: translate(-50%, -50%) rotate(45deg) scale(0.5);
             will-change: transform, opacity;
-            animation: wave-expand 3s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
+            animation: wave-expand 2.5s forwards cubic-bezier(0.1, 0.8, 0.2, 1);
         }
         @keyframes wave-expand {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.8); opacity: 0.8; }
-            100% { transform: translate(-50%, -50%) rotate(45deg) scale(6); opacity: 0; }
+            0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.8); opacity: 1; filter: brightness(1.5); }
+            100% { transform: translate(-50%, -50%) rotate(45deg) scale(8); opacity: 0; filter: blur(2px); }
         }
 
         .tilt-wrapper {
             transition: transform 0.2s ease-out; transform-style: preserve-3d;
-            cursor: crosshair; z-index: 5; will-change: transform;
+            z-index: 5; will-change: transform;
         }
 
-        /* ENHANCED GLASS DIAMOND */
+        /* PRISM DIAMOND */
         .diamond {
             width: 145px; height: 145px; 
-            background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
-            backdrop-filter: blur(15px);
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02));
+            backdrop-filter: blur(15px) saturate(150%);
             -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             transform: rotate(45deg) translateZ(0); 
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05), inset 0 0 20px rgba(255,255,255,0.05);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
             position: relative; overflow: hidden;
-            will-change: transform, box-shadow;
         }
 
-        /* Glitch Reflection & Chromatic Aberration Texture */
-        .diamond::before, .diamond::after {
-            content: ""; position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: repeating-linear-gradient(0deg, transparent, transparent 1px, var(--glitch-col) 2px, transparent 3px);
-            pointer-events: none; mix-blend-mode: overlay;
-        }
-        .diamond::after {
-            background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.6) 50%, transparent 55%);
-            animation: move-light 6s infinite linear;
+        .diamond::before {
+            content: ""; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
+            background: conic-gradient(from 180deg at 50% 50%, transparent, hsla(var(--prism-hue), 100%, 70%, 0.1), transparent);
+            animation: rotate-prism 8s infinite linear;
+            pointer-events: none;
         }
 
-        @keyframes move-light {
-            0% { transform: translate(-30%, -30%) rotate(0deg); }
-            100% { transform: translate(30%, 30%) rotate(0deg); }
-        }
+        @keyframes rotate-prism { 100% { transform: rotate(360deg); } }
 
         .upsilon { 
             color: white; font-size: 85px; font-weight: bold; 
             transform: rotate(-45deg); pointer-events: none;
-            text-shadow: 2px 0 0 rgba(255,0,0,0.5), -2px 0 0 rgba(0,255,255,0.5); /* Aberration */
+            text-shadow: var(--aberration) 0 1px rgba(255,0,80,0.8), calc(var(--aberration) * -1) 0 1px rgba(0,255,255,0.8);
             z-index: 2;
         }
 
-        .vibrate-active { animation: glitch-shake 0.15s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes glitch-shake {
-            10%, 90% { transform: rotate(45deg) translate3d(-1px, 0, 0); }
-            20%, 80% { transform: rotate(46deg) translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: rotate(44deg) translate3d(-4px, 0, 0); }
-            40%, 60% { transform: rotate(45deg) translate3d(4px, 0, 0); }
-        }
-
-        .subtitle { margin: 40px 0 20px 0; font-size: 0.6rem; letter-spacing: 10px; opacity: 0.4; text-transform: uppercase; }
+        .subtitle { margin: 40px 0 20px 0; font-size: 0.6rem; letter-spacing: 10px; opacity: 0.4; }
 
         .nav-links { display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 10; }
         .nav-button {
             font-family: 'Courier New', monospace; color: white;
             text-decoration: none; font-size: 0.8rem; padding: 8px 20px;
-            position: relative; border: 1px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.03); cursor: pointer; min-width: 190px; text-align: center;
-            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1); background: transparent; cursor: pointer; min-width: 190px;
         }
-        .nav-button:hover { border-color: white; background: rgba(255,255,255,0.1); }
-        
-        .nav-button.loading::before { 
-            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0; 
-            background: white; z-index: -1; animation: fill 1.3s linear forwards; 
-        }
-        @keyframes fill { from { width: 0; } to { width: 100%; } }
-        .nav-button.loading { color: black; }
+        .nav-button.loading::before { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 0; background: white; z-index: -1; animation: fill 1.3s linear forwards; }
+        @keyframes fill { to { width: 100%; } }
+        .nav-button.loading { color: black; position: relative; }
 
         .audio-player { margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15; }
-        .audio-ctrl { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; opacity: 0.5; transition: 0.2s; }
-        .audio-ctrl:hover { opacity: 1; transform: scale(1.1); }
+        .audio-ctrl { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; opacity: 0.6; }
 
         #playlist-container {
-            margin-top: 20px; max-height: 100px; overflow-y: auto; width: 280px;
-            text-align: center; font-family: 'Courier New', monospace; font-size: 0.65rem;
-            color: rgba(255,255,255,0.4); z-index: 10; scrollbar-width: none;
+            margin-top: 20px; max-height: 80px; overflow-y: auto; width: 300px;
+            text-align: center; font-family: 'Courier New', monospace; font-size: 0.6rem;
+            color: rgba(255,255,255,0.3); z-index: 10; scrollbar-width: none;
         }
-        .track-item { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .track-item.active { color: #fff; font-weight: bold; background: rgba(255,255,255,0.05); }
+        .track-item.active { color: #fff; font-weight: bold; opacity: 1; }
 
         #file-input { display: none; }
-        .upload-label { font-family: 'Courier New', monospace; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; cursor: pointer; opacity: 0.7; }
-        .upload-label:hover { opacity: 1; border-color: white; }
+        .upload-label { font-family: 'Courier New', monospace; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; cursor: pointer; }
+
+        /* EASTER EGG FOOTER */
+        #ua-footer {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            font-family: 'Inter', sans-serif; font-weight: bold; font-size: 0.9rem;
+            letter-spacing: 2px; color: #00d4ff; text-shadow: 0 0 10px #ffd700;
+            display: none; z-index: 20; animation: pulse-ua 2s infinite;
+        }
+        @keyframes pulse-ua { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -139,7 +126,7 @@
         <div class="tilt-wrapper" id="target">
             <div class="diamond" id="main-diamond"><span class="upsilon">&Upsilon;</span></div>
         </div>
-        <div class="subtitle">Neural Architecture</div>
+        <div class="subtitle">Spectral Core</div>
         
         <div class="nav-links">
             <div class="nav-button" data-url="https://upsilon.dev">⬪ upsilon.dev ⬪</div>
@@ -148,7 +135,7 @@
         </div>
 
         <div class="audio-player">
-            <label for="file-input" class="upload-label">IMPORT SOUND +</label>
+            <label for="file-input" class="upload-label">IMPORT FILE +</label>
             <input type="file" id="file-input" accept="audio/*" multiple>
             <button class="audio-ctrl" id="play-pause">⏯</button>
             <button class="audio-ctrl" id="next-track">⏭</button>
@@ -156,6 +143,8 @@
 
         <div id="playlist-container"></div>
     </div>
+
+    <div id="ua-footer">🇺🇦 Слава Україні</div>
 
     <audio id="audio-element" crossorigin="anonymous"></audio>
 
@@ -165,30 +154,29 @@
         const audio = document.getElementById('audio-element');
         const fileInput = document.getElementById('file-input');
         const playlistUI = document.getElementById('playlist-container');
+        const uaFooter = document.getElementById('ua-footer');
 
-        let playlist = [
-            { name: "Default Stream", url: "https://raw.githubusercontent.com/666F78646965/upsilon.dev/main/leavemealone.mp3" }
-        ];
-        
+        let playlist = [{ name: "🌫️leavemealone.mp3", url: "https://raw.githubusercontent.com/666F78646965/upsilon.dev/main/leavemealone.mp3" }];
         let currentIndex = 0;
         let audioCtx, analyser, dataArray, isInitialized = false;
         let currentScale = 1;
         let lastRingTime = 0;
+        let isUkrainianMode = false;
 
-        function createRing(color = 'rgba(255,255,255,0.5)') {
+        const colors = ['#0033ff', '#ff5500', '#9d00ff', '#ff0000', '#00ff55'];
+
+        function createRing(color) {
             const ring = document.createElement('div');
             ring.className = 'ring';
             ring.style.borderColor = color;
+            ring.style.boxShadow = `0 0 20px ${color}`;
             tunnel.appendChild(ring);
-            setTimeout(() => ring.remove(), 3000);
+            setTimeout(() => ring.remove(), 2500);
         }
 
-        function triggerGlitch() {
-            diamond.classList.add('vibrate-active');
-            createRing('white');
-            setTimeout(() => diamond.classList.remove('vibrate-active'), 200);
+        function detectCyrillic(str) {
+            return /[а-яА-ЯёЁіІїЇєЄґҐ]/.test(str);
         }
-        diamond.addEventListener('click', triggerGlitch);
 
         function updatePlaylistUI() {
             playlistUI.innerHTML = '';
@@ -197,7 +185,6 @@
                 item.className = 'track-item' + (index === currentIndex ? ' active' : '');
                 item.innerText = track.name.toUpperCase();
                 playlistUI.appendChild(item);
-                if(index === currentIndex) item.scrollIntoView({ behavior: 'smooth' });
             });
         }
 
@@ -208,7 +195,7 @@
             const source = audioCtx.createMediaElementSource(audio);
             source.connect(analyser);
             analyser.connect(audioCtx.destination);
-            analyser.fftSize = 128; 
+            analyser.fftSize = 128;
             dataArray = new Uint8Array(analyser.frequencyBinCount);
             isInitialized = true;
             renderFrame();
@@ -216,82 +203,84 @@
 
         fileInput.onchange = (e) => {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
-                playlist.push({ name: file.name, url: URL.createObjectURL(file) });
-            });
+            files.forEach(file => playlist.push({ name: file.name, url: URL.createObjectURL(file) }));
             updatePlaylistUI();
-            if (audio.paused) playCurrent();
+            if (audio.paused) playNext();
         };
 
         function playCurrent() {
             initAudio();
-            if (playlist.length === 0) return;
-            audio.src = playlist[currentIndex].url;
-            audio.play().catch(() => playNext());
+            const track = playlist[currentIndex];
+            isUkrainianMode = detectCyrillic(track.name);
+            
+            uaFooter.style.display = (isUkrainianMode && !audio.paused) ? 'block' : 'none';
+            
+            audio.src = track.url;
+            audio.play().catch(() => {});
             updatePlaylistUI();
         }
 
         function playNext() {
             currentIndex = (currentIndex + 1) % playlist.length;
-            playCurrent();
+            if(!playlist[currentIndex].url) playNext();
+            else playCurrent();
         }
 
         function renderFrame() {
             requestAnimationFrame(renderFrame);
             if (!isInitialized || audio.paused) {
+                uaFooter.style.display = 'none';
                 currentScale += (1 - currentScale) * 0.1;
-                diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
-                diamond.style.boxShadow = `0 0 20px rgba(255,255,255,0.05)`;
+                diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
                 return;
             }
-            analyser.getByteFrequencyData(dataArray);
-            let bass = dataArray[2]; 
-            let mid = dataArray[8];
-            
-            let targetScale = 1 + (bass / 600);
-            currentScale += (targetScale - currentScale) * 0.2;
-            
-            // Reactive Diamond Effects
-            diamond.style.transform = `rotate(45deg) scale(${currentScale}) translateZ(0)`;
-            diamond.style.boxShadow = `0 0 ${bass/5}px rgba(255,255,255,${bass/500})`;
-            diamond.style.borderColor = `rgba(255,255,255,${0.2 + bass/400})`;
 
-            if (bass > 210 && Date.now() - lastRingTime > 160) {
-                let hue = (bass + mid) % 360;
-                createRing(`hsla(${hue}, 100%, 70%, 0.6)`);
+            analyser.getByteFrequencyData(dataArray);
+            let bass = dataArray[2];
+            currentScale += ((1 + bass/600) - currentScale) * 0.2;
+            diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+            
+            document.documentElement.style.setProperty('--prism-hue', bass % 360);
+            document.documentElement.style.setProperty('--aberration', (bass / 35) + 'px');
+
+            if (bass > 200 && Date.now() - lastRingTime > 160) {
+                let ringCol;
+                if (isUkrainianMode) {
+                    // Flashy Blue/Cyan and Yellow
+                    ringCol = (Math.random() > 0.5) ? '#00e5ff' : '#ffff00';
+                    uaFooter.style.display = 'block';
+                } else {
+                    ringCol = colors[Math.floor(Math.random() * colors.length)];
+                }
+                createRing(ringCol);
                 lastRingTime = Date.now();
             }
         }
 
         document.getElementById('play-pause').onclick = () => {
-            if (!audio.src) playCurrent();
-            else audio.paused ? audio.play() : audio.pause();
+            if (audio.paused) {
+                if(!audio.src) playNext(); else audio.play();
+            } else {
+                audio.pause();
+            }
         };
 
         document.getElementById('next-track').onclick = playNext;
         audio.onended = playNext;
-        updatePlaylistUI();
-
-        // Nav Logic
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            let t;
-            btn.onmouseenter = btn.ontouchstart = () => {
-                btn.classList.add('loading');
-                t = setTimeout(() => {
-                    if(confirm("Exit to " + btn.dataset.url + "?")) window.open(btn.dataset.url, '_blank');
-                    btn.classList.remove('loading');
-                }, 1300);
-            };
-            btn.onmouseleave = btn.ontouchend = () => {
-                btn.classList.remove('loading');
-                clearTimeout(t);
-            };
-        });
 
         window.addEventListener('mousemove', (e) => {
-            const x = (window.innerWidth / 2 - e.pageX) / 35;
-            const y = (window.innerHeight / 2 - e.pageY) / 35;
+            const x = (window.innerWidth / 2 - e.pageX) / 45;
+            const y = (window.innerHeight / 2 - e.pageY) / 45;
             document.getElementById('target').style.transform = `rotateX(${y}deg) rotateY(${-x}deg)`;
+        });
+
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            let t;
+            btn.onmouseenter = () => {
+                btn.classList.add('loading');
+                t = setTimeout(() => { if(confirm("Visit?")) window.open(btn.dataset.url); btn.classList.remove('loading'); }, 1300);
+            };
+            btn.onmouseleave = () => { btn.classList.remove('loading'); clearTimeout(t); };
         });
     </script>
 </body>
