@@ -6,17 +6,20 @@
     <title>upsilon.dev</title>
     <style>
         :root {
-            --glitch-col: rgba(255, 255, 255, 0.2);
             --prism-hue: 260;
-            --tunnel-speed: 8s;
-            --axis-rotation: 0deg;
         }
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #020202; color: white;
+            background-color: #000; color: #fff;
             display: flex; justify-content: center; align-items: center;
             font-family: 'Inter', sans-serif; overflow: hidden;
-            perspective: 1200px; touch-action: none;
+            touch-action: none;
+        }
+
+        #grid-canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
         }
 
         .brand-header {
@@ -26,102 +29,86 @@
         .line1 { font-weight: bold; font-size: 1.1rem; letter-spacing: 1px; }
         .line-mono { font-family: 'Courier New', monospace; font-size: 0.85rem; opacity: 0.6; }
 
-        .tunnel-container {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%) rotate(var(--axis-rotation)); 
+        .ui-container {
+            position: relative; z-index: 5;
+            display: flex; flex-direction: column;
+            align-items: center; width: 100%;
             pointer-events: none;
         }
 
-        .ring {
-            position: absolute; width: 160px; height: 160px;
-            border: 1px solid white; background: transparent;
-            transform: translate(-50%, -50%) rotate(45deg) scale(0.65);
-            will-change: transform, opacity;
-            animation: tunnel-flow var(--tunnel-speed) forwards cubic-bezier(0.1, 0.8, 0.15, 1);
-        }
-        @keyframes tunnel-flow {
-            0% { transform: translate(-50%, -50%) rotate(45deg) scale(0.7); opacity: 0; }
-            3% { opacity: 0.9; }
-            100% { transform: translate(-50%, -50%) rotate(45deg) scale(16); opacity: 0; filter: blur(8px); }
-        }
-
         .tilt-wrapper {
-            transition: transform 0.2s ease-out; transform-style: preserve-3d;
-            z-index: 5; will-change: transform;
+            transition: transform 0.2s ease-out;
+            will-change: transform; pointer-events: auto;
         }
 
         .diamond {
-            width: 145px; height: 145px; 
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transform: rotate(45deg) translateZ(0); 
+            width: 140px; height: 140px; 
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transform: rotate(45deg);
             display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
             position: relative; overflow: hidden;
-            cursor: pointer; pointer-events: auto;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.05);
         }
 
         .diamond::before {
             content: ""; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
             background: conic-gradient(from 180deg at 50% 50%, transparent, hsla(var(--prism-hue), 100%, 70%, 0.1), transparent);
-            animation: rotate-prism 8s infinite linear;
-            pointer-events: none;
+            animation: rotate-prism 10s infinite linear;
         }
         @keyframes rotate-prism { 100% { transform: rotate(360deg); } }
 
         .upsilon { 
-            color: white; font-size: 85px; font-weight: bold; 
-            transform: rotate(-45deg); pointer-events: none;
-            z-index: 2; text-shadow: 0 0 15px rgba(255,255,255,0.3);
+            color: #fff; font-size: 80px; font-weight: bold; 
+            transform: rotate(-45deg); text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
 
-        .subtitle-area { margin: 40px 0 20px 0; text-align: center; height: 45px; }
-        .subtitle { font-size: 0.65rem; letter-spacing: 8px; opacity: 0.6; text-transform: uppercase; }
-        #spectral-label { font-size: 0.55rem; letter-spacing: 4px; opacity: 0; transition: opacity 0.5s; color: #fff; margin-top: 8px; }
+        .subtitle-area { margin: 35px 0 15px 0; text-align: center; }
+        .subtitle { font-size: 0.6rem; letter-spacing: 8px; opacity: 0.5; text-transform: uppercase; }
 
-        .nav-links { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; z-index: 10; width: 100%; }
+        .nav-links { 
+            display: flex; flex-direction: column; gap: 10px; 
+            align-items: center; width: 100%; pointer-events: auto;
+        }
         .nav-button {
-            font-family: 'Courier New', monospace; color: white;
-            text-decoration: none; font-size: 0.8rem; padding: 10px 20px;
-            border: 1px solid rgba(255,255,255,0.1); background: transparent; 
+            font-family: 'Courier New', monospace; color: #fff;
+            text-decoration: none; font-size: 0.75rem; padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); 
             cursor: pointer; min-width: 220px; text-align: center;
             position: relative; overflow: hidden; outline: none;
-            user-select: none; -webkit-user-select: none;
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+        }
+        .nav-button span {
+            position: relative; z-index: 2; pointer-events: none;
         }
         .load-progress {
             position: absolute; left: 0; top: 0; height: 100%; width: 0%;
-            background: white; z-index: -1; transition: width 0.1s linear;
+            background: #fff; z-index: 1; transition: width 0.05s linear;
         }
-        .nav-button.active-load { color: black; border-color: white; }
+        .nav-button.active-load { color: #000; border-color: #fff; }
 
-        .audio-player { margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15; }
-        .audio-ctrl { background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; opacity: 0.6; }
+        .audio-player { margin-top: 25px; display: flex; align-items: center; gap: 20px; z-index: 15; pointer-events: auto; }
+        .audio-ctrl { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; opacity: 0.6; }
 
         #playlist-container {
-            margin-top: 20px; max-height: 90px; overflow-y: auto; width: 300px;
+            margin-top: 15px; max-height: 85px; overflow-y: auto; width: 280px;
             text-align: center; font-family: 'Courier New', monospace; font-size: 0.65rem;
-            color: rgba(255,255,255,0.3); z-index: 10; scrollbar-width: none;
-            mask-image: linear-gradient(transparent, white 20%, white 80%, transparent);
-            -webkit-mask-image: linear-gradient(transparent, white 20%, white 80%, transparent);
+            color: rgba(255,255,255,0.3); scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 75%, transparent 100%);
+            padding: 25px 0; pointer-events: auto;
         }
         #playlist-container::-webkit-scrollbar { display: none; }
-        .track-item { padding: 8px 0; transition: all 0.3s ease; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .track-item.active { color: #fff; font-weight: bold; opacity: 1; transform: scale(1.05); }
+        .track-item { padding: 6px 0; transition: all 0.3s ease; cursor: pointer; }
+        .track-item.active { color: #fff; font-weight: bold; transform: scale(1.05); }
 
         #file-input { display: none; }
-        .upload-label { font-family: 'Courier New', monospace; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; cursor: pointer; }
-        #ua-footer {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            font-family: 'Inter', sans-serif; font-weight: bold; font-size: 0.9rem;
-            letter-spacing: 2px; color: #00d4ff; text-shadow: 0 0 10px #ffd700;
-            display: none; z-index: 20; animation: pulse-ua 2s infinite;
-        }
-        @keyframes pulse-ua { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+        .upload-label { font-family: 'Courier New', monospace; font-size: 0.6rem; border: 1px solid rgba(255,255,255,0.2); padding: 5px 12px; cursor: pointer; }
     </style>
 </head>
 <body>
+
+    <canvas id="grid-canvas"></canvas>
 
     <div class="brand-header">
         <div class="line1">🆈 𝘂𝗽𝘀𝗶𝗹𝗼𝗻.dev</div>
@@ -129,15 +116,13 @@
         <div class="line-mono">🅈 upsilon.zip</div>
     </div>
 
-    <div class="container" style="display: flex; flex-direction: column; align-items: center; width: 100%;">
-        <div class="tunnel-container" id="tunnel"></div>
+    <div class="ui-container">
         <div class="tilt-wrapper" id="target">
             <div class="diamond" id="main-diamond"><span class="upsilon">&Upsilon;</span></div>
         </div>
         
         <div class="subtitle-area">
             <div class="subtitle">AI + HUMAN COLLABORATION</div>
-            <div id="spectral-label">SPECTRAL CORE</div>
         </div>
         
         <div class="nav-links">
@@ -147,7 +132,7 @@
         </div>
 
         <div class="audio-player">
-            <label for="file-input" class="upload-label">IMPORT FILE +</label>
+            <label for="file-input" class="upload-label">IMPORT +</label>
             <input type="file" id="file-input" accept="audio/*" multiple>
             <button class="audio-ctrl" id="play-pause">⏯</button>
             <button class="audio-ctrl" id="next-track">⏭</button>
@@ -155,120 +140,132 @@
         <div id="playlist-container"></div>
     </div>
 
-    <div id="ua-footer">🇺🇦 GLORY TO UKRAINE</div>
     <audio id="audio-element" crossorigin="anonymous"></audio>
 
     <script>
-        const diamond = document.getElementById('main-diamond');
-        const tunnel = document.getElementById('tunnel');
+        const canvas = document.getElementById('grid-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
         const audio = document.getElementById('audio-element');
         const fileInput = document.getElementById('file-input');
         const playlistUI = document.getElementById('playlist-container');
-        const uaFooter = document.getElementById('ua-footer');
-        const spectralLabel = document.getElementById('spectral-label');
 
         let playlist = [{ name: "🌫️leavemealone.mp3", url: "https://raw.githubusercontent.com/666F78646965/upsilon.dev/main/leavemealone.mp3" }];
         let currentIndex = 0, audioCtx, analyser, dataArray, isInitialized = false;
-        let currentScale = 1, lastRingTime = 0, isUkrainianMode = false, pulseTime = 0;
-        let activeInterval = null, activeBtn = null;
-        let axisRotation = 0, lastMouseAngle = null, interactionTimer = null, isSlowing = false;
+        
+        let width, height;
+        let scrollOffset = 0;
+        let waveAmplitude = 0;
+        let gridHue = 0;
+        let isUkrainianMode = false;
+        let activeColors = 0; 
 
-        const colors = ['#0033ff', '#ff5500', '#9d00ff', '#ff0000', '#00ff55'];
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            const bar = btn.querySelector('.load-progress');
-            let progress = 0, vibTriggered = false;
+        const gridSize = 45;
+        const perspective = 300;
+        const horizon = 0.45;
 
-            const startLoading = (e) => {
-                if (e.type === 'touchstart') e.preventDefault();
-                if (activeInterval) clearInterval(activeInterval);
-                document.querySelectorAll('.nav-button').forEach(b => {
-                    b.classList.remove('active-load');
-                    b.querySelector('.load-progress').style.width = '0%';
-                });
-
-                btn.classList.add('active-load');
-                activeBtn = btn; progress = 0; vibTriggered = false;
-
-                activeInterval = setInterval(() => {
-                    progress += 2;
-                    if (progress > 100) progress = 100;
-                    bar.style.width = progress + '%';
-
-                    if (progress >= 90 && !vibTriggered) { 
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        vibTriggered = true;
-                    }
-
-                    if (progress >= 100) {
-                        clearInterval(activeInterval);
-                        activeInterval = null;
-                        setTimeout(() => {
-                            if (activeBtn === btn) {
-                                if (confirm(`Visit ${btn.dataset.url}?`)) window.open(btn.dataset.url, '_blank');
-                                resetLoading();
-                            }
-                        }, 300);
-                    }
-                }, 25);
-            };
-
-            const resetLoading = () => {
-                if (activeInterval) { clearInterval(activeInterval); activeInterval = null; }
-                progress = 0; bar.style.width = '0%';
-                btn.classList.remove('active-load');
-                activeBtn = null;
-            };
-
-            btn.addEventListener('pointerdown', startLoading);
-            btn.addEventListener('touchend', resetLoading);
-            window.addEventListener('pointerup', () => { if (activeBtn) resetLoading(); });
-        });
-
-        function handleDiamondInteraction(e) {
-            if (audio.paused) return;
-            const rect = diamond.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-
-            if (lastMouseAngle !== null) {
-                let delta = currentAngle - lastMouseAngle;
-                if (delta > Math.PI) delta -= Math.PI * 2;
-                if (delta < -Math.PI) delta += Math.PI * 2;
-                axisRotation += delta * (180 / Math.PI);
-                document.documentElement.style.setProperty('--axis-rotation', axisRotation + 'deg');
-                
-                if (!isSlowing) {
-                    isSlowing = true;
-                    document.documentElement.style.setProperty('--tunnel-speed', '16s');
-                    clearTimeout(interactionTimer);
-                    interactionTimer = setTimeout(() => {
-                        isSlowing = false;
-                        document.documentElement.style.setProperty('--tunnel-speed', '8s');
-                    }, 3000);
-                }
-            }
-            lastMouseAngle = currentAngle;
+        function project(x, y, z) {
+            const scale = perspective / (z || 1);
+            return { x: width / 2 + x * scale, y: height * horizon + (y + 80) * scale };
         }
 
-        diamond.addEventListener('pointermove', handleDiamondInteraction);
-        diamond.addEventListener('pointerleave', () => lastMouseAngle = null);
-        diamond.addEventListener('pointerdown', (e) => {
-            if (audio.paused) {
-                createRing('rgba(255,255,255,0.8)');
-                if (navigator.vibrate) navigator.vibrate(25);
-                currentScale = 1.15;
+        function getColor(index, alpha) {
+            if (activeColors < 0.05) return `rgba(255, 255, 255, ${alpha * 0.2})`;
+            
+            let colorStr;
+            if (isUkrainianMode) {
+                colorStr = index % 2 === 0 ? `255, 255, 0` : `0, 229, 255`;
+            } else {
+                return `hsla(${gridHue + index * 8}, 100%, 60%, ${alpha * (0.2 + activeColors * 0.4)})`;
             }
-        });
+            
+            const rBase = 255, gBase = 255, bBase = 255;
+            const [rT, gT, bT] = colorStr.split(',').map(Number);
+            
+            const r = Math.round(rBase + (rT - rBase) * activeColors);
+            const g = Math.round(gBase + (gT - gBase) * activeColors);
+            const b = Math.round(bBase + (bT - bBase) * activeColors);
+            
+            return `rgba(${r}, ${g}, ${b}, ${alpha * (0.2 + activeColors * 0.4)})`;
+        }
 
-        function createRing(color) {
-            const ring = document.createElement('div');
-            ring.className = 'ring';
-            ring.style.borderColor = color;
-            ring.style.boxShadow = `0 0 20px ${color}`;
-            tunnel.appendChild(ring);
-            setTimeout(() => ring.remove(), isSlowing ? 16000 : 8000);
+        function drawGrid(time) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            
+            scrollOffset += 0.5 + (waveAmplitude * 0.01); 
+            if (scrollOffset >= gridSize) scrollOffset = 0;
+
+            const rows = 28;
+            const cols = 22;
+            const audioEffect = waveAmplitude * 0.8;
+
+            ctx.lineWidth = 1;
+
+            for (let i = -cols; i <= cols; i++) {
+                ctx.beginPath();
+                const xPos = i * gridSize;
+                for (let j = 0; j < rows; j++) {
+                    const zPos = j * gridSize - scrollOffset;
+                    if (zPos <= 0) continue;
+
+                    const undulation = Math.sin(xPos * 0.01 + zPos * 0.01 + time * 0.002) * audioEffect;
+                    const p = project(xPos, undulation, zPos);
+                    
+                    if (j === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                }
+                const alpha = 1 - (i === 0 ? 0 : Math.abs(i) / cols);
+                ctx.strokeStyle = getColor(Math.abs(i), alpha);
+                ctx.stroke();
+            }
+
+            for (let j = 1; j < rows; j++) {
+                ctx.beginPath();
+                const zPos = j * gridSize - scrollOffset;
+                if (zPos <= 0) continue;
+
+                const alpha = Math.max(0, 1 - (zPos / (rows * gridSize)));
+
+                for (let i = -cols; i <= cols; i++) {
+                    const xPos = i * gridSize;
+                    const undulation = Math.sin(xPos * 0.01 + zPos * 0.01 + time * 0.002) * audioEffect;
+                    const p = project(xPos, undulation, zPos);
+                    
+                    if (i === -cols) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                }
+                ctx.strokeStyle = getColor(j, alpha);
+                ctx.stroke();
+            }
+        }
+
+        function render(time) {
+            if (isInitialized && !audio.paused) {
+                analyser.getByteFrequencyData(dataArray);
+                const bass = dataArray[2];
+                const treble = dataArray[50];
+                
+                waveAmplitude = bass;
+                gridHue = (bass * 1.5 + treble + time * 0.05) % 360;
+                activeColors += (1 - activeColors) * 0.05;
+                
+                document.documentElement.style.setProperty('--prism-hue', bass % 360);
+                document.getElementById('main-diamond').style.transform = `rotate(45deg) scale(${1 + bass/600})`;
+            } else {
+                waveAmplitude *= 0.95;
+                activeColors *= 0.95;
+                document.getElementById('main-diamond').style.transform = `rotate(45deg) scale(1)`;
+            }
+
+            drawGrid(time);
+            requestAnimationFrame(render);
         }
 
         function initAudio() {
@@ -282,80 +279,96 @@
                 analyser.fftSize = 128;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
                 isInitialized = true;
-                renderFrame();
             } catch(e) {}
         }
 
-        function renderFrame() {
-            requestAnimationFrame(renderFrame);
-            if (!audio.paused && isInitialized) {
-                uaFooter.style.display = isUkrainianMode ? 'block' : 'none';
-                analyser.getByteFrequencyData(dataArray);
-                let bass = dataArray[2];
-                document.documentElement.style.setProperty('--prism-hue', bass % 360);
-                currentScale += ((1 + bass/600) - currentScale) * 0.2;
-                diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
+        document.querySelectorAll('.nav-button').forEach(btn => {
+            const bar = btn.querySelector('.load-progress');
+            let timer;
+            let triggered = false;
 
-                const threshold = isSlowing ? 200 : 80; 
-                if (bass > 185 && Date.now() - lastRingTime > threshold) {
-                    let ringCol = isUkrainianMode ? ((Math.random() > 0.5) ? '#00e5ff' : '#ffff00') : colors[Math.floor(Math.random() * colors.length)];
-                    createRing(ringCol);
-                    lastRingTime = Date.now();
-                }
-            } else {
-                uaFooter.style.display = 'none'; spectralLabel.style.opacity = "0";
-                pulseTime += 0.03;
-                let pulse = 1 + Math.sin(pulseTime) * 0.04;
-                currentScale += (pulse - currentScale) * 0.1;
-                diamond.style.transform = `rotate(45deg) scale(${currentScale})`;
-                document.documentElement.style.setProperty('--prism-hue', (pulseTime * 20) % 360);
-            }
-        }
+            const start = (e) => {
+                if (e.cancelable) e.preventDefault();
+                if (triggered) return;
+                
+                btn.classList.add('active-load');
+                let p = 0;
+                clearInterval(timer);
+                
+                timer = setInterval(() => {
+                    p += 4;
+                    if (p >= 100) {
+                        p = 100;
+                        clearInterval(timer);
+                        bar.style.width = p + '%';
+                        triggered = true;
+                        
+                        setTimeout(() => {
+                            window.open(btn.dataset.url, '_blank');
+                            reset();
+                        }, 150);
+                    } else {
+                        bar.style.width = p + '%';
+                    }
+                }, 20);
+            };
 
-        function updatePlaylistUI(shouldScroll = false) {
+            const reset = () => { 
+                clearInterval(timer); 
+                bar.style.width = '0%'; 
+                btn.classList.remove('active-load'); 
+                setTimeout(() => { triggered = false; }, 200);
+            };
+
+            btn.addEventListener('pointerdown', start);
+            btn.addEventListener('pointerup', reset);
+            btn.addEventListener('pointerleave', reset);
+            btn.addEventListener('contextmenu', e => e.preventDefault());
+        });
+
+        function updateUI() {
             playlistUI.innerHTML = '';
-            playlist.forEach((track, index) => {
+            playlist.forEach((t, i) => {
                 const item = document.createElement('div');
-                item.className = 'track-item' + (index === currentIndex ? ' active' : '');
-                item.innerText = track.name.toUpperCase();
+                item.className = 'track-item' + (i === currentIndex ? ' active' : '');
+                item.innerText = t.name.toUpperCase();
+                item.onclick = () => { currentIndex = i; play(); };
                 playlistUI.appendChild(item);
                 
-                
-                if(index === currentIndex && shouldScroll) {
-                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                if (i === currentIndex) {
+                    setTimeout(() => {
+                        item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 50);
                 }
             });
         }
 
         fileInput.onchange = (e) => {
-            const files = Array.from(e.target.files);
-            files.forEach(file => playlist.push({ name: file.name, url: URL.createObjectURL(file) }));
-            updatePlaylistUI(false); 
-            if (audio.paused) playNext();
+            Array.from(e.target.files).forEach(f => playlist.push({ name: f.name, url: URL.createObjectURL(f) }));
+            updateUI();
         };
 
-        function playCurrent() {
-            initAudio(); 
-            const track = playlist[currentIndex];
-            isUkrainianMode = /[а-яА-ЯёЁіІїЇєЄґҐ]/.test(track.name);
-            audio.src = track.url; 
+        function play() {
+            initAudio();
+            const currentTrack = playlist[currentIndex];
+            isUkrainianMode = /[а-яА-ЯёЁіІїЇєЄґҐ]/.test(currentTrack.name);
+            audio.src = currentTrack.url;
             audio.play().catch(() => {});
-            updatePlaylistUI(true); // Internal scroll only
-            spectralLabel.style.opacity = "0.6";
+            updateUI();
         }
 
-        function playNext() { currentIndex = (currentIndex + 1) % playlist.length; if(!playlist[currentIndex].url) playNext(); else playCurrent(); }
+        document.getElementById('play-pause').onclick = () => audio.paused ? (audio.src ? audio.play() : play()) : audio.pause();
+        document.getElementById('next-track').onclick = () => { currentIndex = (currentIndex + 1) % playlist.length; play(); };
+        audio.onended = () => document.getElementById('next-track').click();
 
-        document.getElementById('play-pause').onclick = () => { if (audio.paused) { if(!audio.src) playNext(); else audio.play(); } else { audio.pause(); } };
-        document.getElementById('next-track').onclick = playNext;
-        audio.onended = playNext;
-        
         window.addEventListener('mousemove', (e) => {
-            const x = (window.innerWidth / 2 - e.pageX) / 45, y = (window.innerHeight / 2 - e.pageY) / 45;
+            const x = (width/2 - e.clientX) / 40;
+            const y = (height/2 - e.clientY) / 40;
             document.getElementById('target').style.transform = `rotateX(${y}deg) rotateY(${-x}deg)`;
         });
-        
-        updatePlaylistUI(false);
+
+        updateUI();
+        requestAnimationFrame(render);
     </script>
 </body>
 </html>
