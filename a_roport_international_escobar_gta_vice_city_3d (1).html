@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Escobar International Airport - Vice City 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Orbitron:wght@500;700;900&family=Pacifico&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0b0518;
+            font-family: 'Inter', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .font-vice {
+            font-family: 'Pacifico', cursive;
+        }
+        .font-hud {
+            font-family: 'Orbitron', sans-serif;
+        }
+        .neon-pink-text {
+            color: #ff6ec7;
+            text-shadow: 0 0 6px #ff1493, 0 0 14px #ff1493, 0 0 28px #b0006d;
+        }
+        .neon-cyan-text {
+            color: #5ce1e6;
+            text-shadow: 0 0 6px #00e5ff, 0 0 14px #00b8d4;
+        }
+        .glass-panel {
+            background: rgba(15, 10, 32, 0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 110, 199, 0.35);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 0 12px rgba(92, 225, 230, 0.12);
+        }
+        .btn-vice {
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid rgba(92, 225, 230, 0.35);
+        }
+        .btn-vice:hover {
+            background: rgba(255, 110, 199, 0.28);
+            border-color: #ff6ec7;
+            box-shadow: 0 0 12px rgba(255, 110, 199, 0.6);
+            transform: translateY(-1px);
+        }
+        .btn-vice.active {
+            background: linear-gradient(135deg, rgba(255, 20, 147, 0.55), rgba(0, 229, 255, 0.45));
+            border-color: #ff6ec7;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 110, 199, 0.75);
+        }
+        /* Custom scrollbar for mobile panels */
+        ::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 110, 199, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Conteneur WebGL -->
+    <div id="canvas-container"></div>
+
+    <!-- Écran de chargement rétro -->
+    <div id="loader" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0d061f] transition-opacity duration-700">
+        <div class="text-center px-4">
+            <h1 class="font-vice text-4xl sm:text-6xl neon-pink-text mb-2 tracking-wide">Vice City</h1>
+            <p class="font-hud text-sm sm:text-lg neon-cyan-text tracking-[0.25em] uppercase mb-8">Escobar International Airport</p>
+            <div class="w-64 sm:w-80 h-3 bg-gray-900 rounded-full overflow-hidden border border-pink-500/50 mx-auto p-0.5">
+                <div id="loader-bar" class="h-full bg-gradient-to-r from-pink-500 via-purple-400 to-cyan-400 rounded-full w-1/4 transition-all duration-300"></div>
+            </div>
+            <p class="text-xs text-pink-200/70 font-hud mt-3 tracking-widest">CHARGEMENT DU SECTEUR 1986...</p>
+        </div>
+    </div>
+
+    <!-- Interface HUD Style GTA Vice City -->
+    <div id="hud-overlay" class="fixed inset-0 z-10 pointer-events-none flex flex-col justify-between p-3 sm:p-5">
+        
+        <!-- Barre supérieure : HUD Rétro & Sélecteur d'ambiance -->
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            
+            <!-- Panneau Ambiance / Moment de la journée -->
+            <div class="glass-panel rounded-2xl p-2.5 sm:p-3 pointer-events-auto max-w-full">
+                <div class="flex items-center gap-2 mb-1.5 px-1">
+                    <span class="w-2 h-2 rounded-full bg-pink-500 animate-ping"></span>
+                    <span class="font-hud text-[10px] sm:text-xs text-cyan-300 tracking-wider uppercase font-bold">Ambiance Atmosphérique</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5" id="mood-controls">
+                    <button data-mood="sunset" class="btn-vice active rounded-xl px-2.5 py-1.5 text-xs font-semibold text-pink-100 flex items-center gap-1.5">
+                        <span>🌅</span> Coucher de soleil 1986
+                    </button>
+                    <button data-mood="day" class="btn-vice rounded-xl px-2.5 py-1.5 text-xs font-semibold text-cyan-100 flex items-center gap-1.5">
+                        <span>☀️</span> Journée Miami
+                    </button>
+                    <button data-mood="night" class="btn-vice rounded-xl px-2.5 py-1.5 text-xs font-semibold text-purple-200 flex items-center gap-1.5">
+                        <span>🌃</span> Nuit Néon
+                    </button>
+                </div>
+            </div>
+
+            <!-- HUD Classique Vice City (Haut Droite) -->
+            <div class="flex flex-col items-end pointer-events-auto ml-auto">
+                <div class="glass-panel rounded-2xl px-4 py-2.5 text-right border-pink-500/40">
+                    <div class="flex items-center justify-end gap-3">
+                        <span id="hud-clock" class="font-hud text-xl sm:text-2xl font-black neon-cyan-text tracking-wider">19:86</span>
+                        <span class="px-2 py-0.5 rounded-md bg-pink-600/40 border border-pink-400/50 font-hud text-[10px] text-pink-200 font-bold">★ 0</span>
+                    </div>
+                    <div class="font-hud text-sm sm:text-base font-bold text-emerald-400 tracking-wider mt-0.5" style="text-shadow: 0 0 8px rgba(52,211,153,0.5);">
+                        $00485920
+                    </div>
+                    <div class="mt-1 pt-1 border-t border-white/10">
+                        <span class="font-vice text-lg sm:text-xl neon-pink-text leading-none">Escobar International</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification / Info zone dynamique -->
+        <div id="zone-banner" class="self-center transition-all duration-500 opacity-0 transform translate-y-2">
+            <div class="glass-panel rounded-full px-5 py-1.5 border-cyan-400/50">
+                <span id="zone-banner-text" class="font-hud text-xs sm:text-sm neon-cyan-text tracking-widest uppercase">Vue Aérienne - Terminal Principal</span>
+            </div>
+        </div>
+
+        <!-- Barre inférieure : Caméras prédéfinies & Contrôles de navigation -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-end justify-between gap-3">
+            
+            <!-- Vues prédéfinies rapides -->
+            <div class="glass-panel rounded-2xl p-2.5 pointer-events-auto overflow-x-auto">
+                <div class="flex items-center justify-between mb-1.5 px-1">
+                    <span class="font-hud text-[10px] sm:text-xs text-pink-300 tracking-wider uppercase font-bold">Caméras & Secteurs</span>
+                    <button id="toggle-freefly" class="ml-3 px-2.5 py-0.5 rounded-lg text-[11px] font-hud bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 hover:bg-cyan-500/40 transition">
+                        Mode Libre: OFF
+                    </button>
+                </div>
+                <div class="flex gap-1.5 min-w-max" id="camera-presets">
+                    <button data-cam="aerial" class="btn-vice active rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                        🚁 Vue Aérienne
+                    </button>
+                    <button data-cam="terminal" class="btn-vice rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                        🏛️ Terminal Principal
+                    </button>
+                    <button data-cam="tower" class="btn-vice rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                        🗼 Tour de Contrôle
+                    </button>
+                    <button data-cam="runway" class="btn-vice rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                        🛫 Piste & Décollage
+                    </button>
+                    <button data-cam="apron" class="btn-vice rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                        ✈️ Tarmac & Avions
+                    </button>
+                </div>
+            </div>
+
+            <!-- Aide contrôles compacte -->
+            <div class="glass-panel rounded-2xl px-3.5 py-2.5 pointer-events-auto text-[11px] text-gray-200 flex flex-wrap items-center justify-between sm:justify-end gap-3">
+                <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-white/10 font-hud text-cyan-300">Souris / Tactile</span>
+                    <span>Orbite & Zoom</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="px-1.5 py-0.5 rounded bg-white/10 font-hud text-pink-300">ZQSD / WASD</span>
+                    <span>Déplacement libre</span>
+                </div>
+                <button id="btn-toggle-hud" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition">
+                    Masquer HUD
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton flottant pour réafficher le HUD s'il est masqué -->
+    <button id="btn-show-hud" class="fixed bottom-4 right-4 z-20 hidden glass-panel rounded-full px-4 py-2 text-xs font-hud neon-pink-text pointer-events-auto">
+        Afficher HUD
+    </button>
+
+    <script>
+        // ============================================================================
+        // CONFIGURATION GLOBALE & ÉTAT DE LA SCÈNE
+        // ============================================================================
+        let scene, camera, renderer, controls;
+        let clock = new THREE.Clock();
+        let currentMood = 'sunset';
+        let isFreeFly = false;
+        let moveState = { forward: false, backward: false, left: false, right: false, up: false, down: false };
+        
+        // Éléments animés et dynamiques
+        const animatedObjects = {
+            radarDish: null,
+            airliner: null,
+            airlinerProgress: 0,
+            airlinerLights: [],
+            skimmerPlane: null,
+            vehicles: [],
+            beaconLights: [],
+            runwayLights: [],
+            taxiwayLights: [],
+            neonMaterials: [],
+            windowMaterials: [],
+            waterMesh: null,
+            palmTrees: []
+        };
+
+        // Lumières principales
+        let sunLight, hemiLight, ambientLight;
+        let skyUniforms;
+
+        // Transitions fluides de caméra
+        let targetCamPos = null;
+        let targetLookAt = null;
+        let isTransitioningCam = false;
+
+        // Définitions des caméras prédéfinies
+        const CAMERA_PRESETS = {
+            aerial: {
+                pos: new THREE.Vector3(-140, 95, 155),
+                target: new THREE.Vector3(10, 8, -20),
+                label: "Vue Aérienne - Complexe Escobar International"
+            },
+            terminal: {
+                pos: new THREE.Vector3(-68, 22, 72),
+                target: new THREE.Vector3(-15, 14, 15),
+                label: "Terminal Principal - Architecture Googie 1986"
+            },
+            tower: {
+                pos: new THREE.Vector3(48, 46, 36),
+                target: new THREE.Vector3(18, 36, -6),
+                label: "Tour de Contrôle & Radar Panoramique"
+            },
+            runway: {
+                pos: new THREE.Vector3(-175, 16, -78),
+                target: new THREE.Vector3(40, 12, -95),
+                label: "Piste 09/27 - Séquence de Décollage & Atterrissage"
+            },
+            apron: {
+                pos: new THREE.Vector3(62, 14, -22),
+                target: new THREE.Vector3(12, 8, -45),
+                label: "Tarmac & Aire de Stationnement Air Vice"
+            }
+        };
+
+        // ============================================================================
+        // GÉNÉRATEURS DE TEXTURES PROCÉDURALES (CANVAS 2D)
+        // ============================================================================
+        function createRunwayTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Asphalte texturé
+            ctx.fillStyle = '#23252b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grain asphalte
+            for (let i = 0; i < 18000; i++) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
+                ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+            }
+
+            // Traces de gomme au toucher des roues
+            const skidGrad = ctx.createLinearGradient(250, 0, 650, 0);
+            skidGrad.addColorStop(0, 'rgba(10,10,12,0)');
+            skidGrad.addColorStop(0.3, 'rgba(10,10,12,0.55)');
+            skidGrad.addColorStop(1, 'rgba(10,10,12,0)');
+            ctx.fillStyle = skidGrad;
+            ctx.fillRect(250, 160, 400, 192);
+
+            const skidGrad2 = ctx.createLinearGradient(1400, 0, 1800, 0);
+            skidGrad2.addColorStop(0, 'rgba(10,10,12,0)');
+            skidGrad2.addColorStop(0.7, 'rgba(10,10,12,0.55)');
+            skidGrad2.addColorStop(1, 'rgba(10,10,12,0)');
+            ctx.fillStyle = skidGrad2;
+            ctx.fillRect(1400, 160, 400, 192);
+
+            // Lignes de bordure blanches
+            ctx.fillStyle = '#e5e7eb';
+            ctx.fillRect(20, 22, canvas.width - 40, 10);
+            ctx.fillRect(20, canvas.height - 32, canvas.width - 40, 10);
+
+            // Barres de seuil (Piano keys) gauche et droite
+            for (let y = 48; y < canvas.height - 48; y += 36) {
+                ctx.fillRect(35, y, 75, 18);
+                ctx.fillRect(canvas.width - 110, y, 75, 18);
+            }
+
+            // Numéros de piste "09" et "27"
+            ctx.save();
+            ctx.fillStyle = '#f3f4f6';
+            ctx.font = 'bold 74px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            ctx.translate(185, canvas.height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText('09', 0, 0);
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = '#f3f4f6';
+            ctx.font = 'bold 74px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.translate(canvas.width - 185, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('27', 0, 0);
+            ctx.restore();
+
+            // Ligne médiane discontinue
+            for (let x = 270; x < canvas.width - 270; x += 95) {
+                ctx.fillRect(x, canvas.height / 2 - 5, 52, 10);
+            }
+
+            // Marques de zone de toucher des roues (Touchdown zone)
+            ctx.fillRect(320, 140, 90, 24);
+            ctx.fillRect(320, canvas.height - 164, 90, 24);
+            ctx.fillRect(canvas.width - 410, 140, 90, 24);
+            ctx.fillRect(canvas.width - 410, canvas.height - 164, 90, 24);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.anisotropy = 8;
+            return tex;
+        }
+
+        function createNeonSignTexture(text, subtext, bgColor, borderColor, textColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = bgColor || '#140826';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Cadre néon
+            ctx.strokeStyle = borderColor || '#00e5ff';
+            ctx.lineWidth = 10;
+            ctx.shadowColor = borderColor || '#00e5ff';
+            ctx.shadowBlur = 20;
+            ctx.strokeRect(16, 16, canvas.width - 32, canvas.height - 32);
+
+            // Texte principal
+            ctx.fillStyle = textColor || '#ff6ec7';
+            ctx.shadowColor = '#ff1493';
+            ctx.shadowBlur = 25;
+            ctx.font = 'bold 64px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, subtext ? 105 : 128);
+
+            if (subtext) {
+                ctx.fillStyle = '#5ce1e6';
+                ctx.shadowColor = '#00e5ff';
+                ctx.shadowBlur = 15;
+                ctx.font = '36px Pacifico, cursive';
+                ctx.fillText(subtext, canvas.width / 2, 185);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
+        }
+
+        function createAirViceLiveryTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Fuselage blanc nacré
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, 512, 256);
+
+            // Bandes rétro pastel Vice City (Rose, Violet, Turquoise)
+            ctx.fillStyle = '#ff6ec7';
+            ctx.fillRect(0, 125, 512, 14);
+            ctx.fillStyle = '#a855f7';
+            ctx.fillRect(0, 139, 512, 10);
+            ctx.fillStyle = '#22d3ee';
+            ctx.fillRect(0, 149, 512, 14);
+
+            // Hublots
+            ctx.fillStyle = '#1e293b';
+            for (let x = 70; x < 440; x += 16) {
+                ctx.beginPath();
+                ctx.roundRect(x, 96, 8, 13, 3);
+                ctx.fill();
+            }
+
+            // Logo Air Vice
+            ctx.fillStyle = '#db2777';
+            ctx.font = 'italic bold 26px Orbitron, sans-serif';
+            ctx.fillText('AIR VICE', 95, 82);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
+        }
+
+        // ============================================================================
+        // INITIALISATION PRINCIPALE
+        // ============================================================================
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scène & Brouillard atmosphérique
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x2a1242, 0.0018);
+
+            // Caméra
+            camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.5, 1600);
+            camera.position.copy(CAMERA_PRESETS.aerial.pos);
+
+            // Renderer WebGL haute qualité
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.15;
+            container.appendChild(renderer.domElement);
+
+            // Contrôles OrbitControls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+            controls.maxPolarAngle = Math.PI / 2 - 0.025; // Empêche de passer sous le sol
+            controls.minDistance = 8;
+            controls.maxDistance = 420;
+            controls.target.copy(CAMERA_PRESETS.aerial.target);
+
+            // Arrêter transition auto si l'utilisateur touche à la caméra
+            controls.addEventListener('start', () => {
+                isTransitioningCam = false;
+            });
+
+            // Construction de tous les éléments du monde
+            setupSkyAndLighting();
+            buildEnvironmentAndBay();
+            buildRunwayAndTaxiways();
+            buildEscobarTerminal();
+            buildControlTower();
+            buildHangars();
+            buildAircraftFleet();
+            buildAirportVehicles();
+            buildPalmTreesAndCityFront();
+
+            // Appliquer l'ambiance initiale
+            setMood('sunset');
+
+            // Événements UI & Clavier
+            setupEventListeners();
+
+            // Masquer l'écran de chargement
+            const loaderBar = document.getElementById('loader-bar');
+            loaderBar.style.width = '100%';
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 700);
+                showZoneBanner(CAMERA_PRESETS.aerial.label);
+            }, 600);
+        }
+
+        // ============================================================================
+        // CIEL DÉGRADÉ SHADER & ÉCLAIRAGE DYNAMIQUE
+        // ============================================================================
+        function setupSkyAndLighting() {
+            // Dôme céleste avec shader personnalisé
+            const skyGeo = new THREE.SphereGeometry(750, 32, 24);
+            skyUniforms = {
+                topColor: { value: new THREE.Color(0x1b0b3b) },
+                midColor: { value: new THREE.Color(0xb8336a) },
+                bottomColor: { value: new THREE.Color(0xff9a5a) },
+                sunDirection: { value: new THREE.Vector3(-0.6, 0.18, -0.75).normalize() },
+                sunColor: { value: new THREE.Color(0xffbe76) },
+                sunIntensity: { value: 1.0 }
+            };
+
+            const skyMat = new THREE.ShaderMaterial({
+                uniforms: skyUniforms,
+                vertexShader: `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 midColor;
+                    uniform vec3 bottomColor;
+                    uniform vec3 sunDirection;
+                    uniform vec3 sunColor;
+                    uniform float sunIntensity;
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec3 dir = normalize(vWorldPosition);
+                        float h = clamp(dir.y, 0.0, 1.0);
+                        vec3 col = mix(bottomColor, midColor, smoothstep(0.0, 0.28, h));
+                        col = mix(col, topColor, smoothstep(0.28, 0.85, h));
+                        
+                        // Disque solaire rétro Vice City
+                        float sunDot = max(dot(dir, normalize(sunDirection)), 0.0);
+                        float sunGlow = pow(sunDot, 16.0) * 0.45 * sunIntensity;
+                        float sunDisc = smoothstep(0.9965, 0.9985, sunDot) * sunIntensity;
+                        
+                        // Bandes horizontales rétro sur le soleil couchant
+                        if (sunDisc > 0.01 && sunIntensity > 0.5) {
+                            float stripe = sin(dir.y * 260.0);
+                            if (dir.y < 0.22 && stripe > 0.35) {
+                                sunDisc *= 0.15;
+                            }
+                        }
+                        
+                        col += sunColor * (sunGlow + sunDisc * 1.4);
+                        gl_FragColor = vec4(col, 1.0);
+                    }
+                `,
+                side: THREE.BackSide,
+                depthWrite: false
+            });
+            const skyMesh = new THREE.Mesh(skyGeo, skyMat);
+            scene.add(skyMesh);
+
+            // Lumières
+            ambientLight = new THREE.AmbientLight(0x6b4c8c, 0.65);
+            scene.add(ambientLight);
+
+            hemiLight = new THREE.HemisphereLight(0xff85c0, 0x262936, 0.6);
+            scene.add(hemiLight);
+
+            sunLight = new THREE.DirectionalLight(0xffaa66, 1.45);
+            sunLight.position.set(-140, 65, -160);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 10;
+            sunLight.shadow.camera.far = 520;
+            const d = 185;
+            sunLight.shadow.camera.left = -d;
+            sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d;
+            sunLight.shadow.camera.bottom = -d;
+            sunLight.shadow.bias = -0.0005;
+            scene.add(sunLight);
+        }
+
+        // ============================================================================
+        // SOL, TARMAC, BAIE DE VICE CITY & ROUTES D'ACCÈS
+        // ============================================================================
+        function buildEnvironmentAndBay() {
+            // Île principale (herbe tropicale & terrain d'aéroport)
+            const islandGeo = new THREE.BoxGeometry(460, 4, 340);
+            const islandMat = new THREE.MeshStandardMaterial({
+                color: 0x2d5a3c,
+                roughness: 0.9,
+                metalness: 0.05
+            });
+            const island = new THREE.Mesh(islandGeo, islandMat);
+            island.position.set(0, -2.05, -25);
+            island.receiveShadow = true;
+            scene.add(island);
+
+            // Plage de sable doré entourant l'île de l'aéroport
+            const beachGeo = new THREE.BoxGeometry(478, 3.2, 358);
+            const beachMat = new THREE.MeshStandardMaterial({
+                color: 0xe6c88a,
+                roughness: 0.85
+            });
+            const beach = new THREE.Mesh(beachGeo, beachMat);
+            beach.position.set(0, -2.35, -25);
+            beach.receiveShadow = true;
+            scene.add(beach);
+
+            // Eau de la Baie de Vice City (océan réfléchissant)
+            const waterGeo = new THREE.PlaneGeometry(2000, 2000, 64, 64);
+            const waterMat = new THREE.MeshStandardMaterial({
+                color: 0x0a5c75,
+                roughness: 0.15,
+                metalness: 0.82
+            });
+            const water = new THREE.Mesh(waterGeo, waterMat);
+            water.rotation.x = -Math.PI / 2;
+            water.position.y = -2.8;
+            scene.add(water);
+            animatedObjects.waterMesh = water;
+
+            // Grand Tarmac (Apron en béton clair)
+            const apronGeo = new THREE.PlaneGeometry(270, 120);
+            const apronMat = new THREE.MeshStandardMaterial({
+                color: 0x525661,
+                roughness: 0.82,
+                metalness: 0.08
+            });
+            const apron = new THREE.Mesh(apronGeo, apronMat);
+            apron.rotation.x = -Math.PI / 2;
+            apron.position.set(10, 0.02, -32);
+            apron.receiveShadow = true;
+            scene.add(apron);
+
+            // Marquages des postes de stationnement sur le tarmac (Bays 1 à 4)
+            const bayLineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+            for (let i = 0; i < 4; i++) {
+                const bx = -45 + i * 42;
+                const bz = -36;
+                // Axe de guidage jaune
+                const guide = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 26), bayLineMat);
+                guide.rotation.x = -Math.PI / 2;
+                guide.position.set(bx, 0.04, bz);
+                scene.add(guide);
+
+                // Barre d'arrêt
+                const stopBar = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                stopBar.rotation.x = -Math.PI / 2;
+                stopBar.position.set(bx, 0.04, bz + 10);
+                scene.add(stopBar);
+            }
+
+            // Avenue d'accès devant le terminal (Côté Ville)
+            const roadGeo = new THREE.PlaneGeometry(340, 26);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x26282e, roughness: 0.85 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.set(0, 0.03, 52);
+            road.receiveShadow = true;
+            scene.add(road);
+
+            // Lignes jaunes centrales de l'avenue
+            const centerLine = new THREE.Mesh(new THREE.PlaneGeometry(330, 0.5), bayLineMat);
+            centerLine.rotation.x = -Math.PI / 2;
+            centerLine.position.set(0, 0.045, 52);
+            scene.add(centerLine);
+
+            // Trottoir / Parvis devant le terminal
+            const plazaGeo = new THREE.BoxGeometry(190, 0.35, 22);
+            const plazaMat = new THREE.MeshStandardMaterial({ color: 0xd6d3d1, roughness: 0.7 });
+            const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+            plaza.position.set(-10, 0.17, 30);
+            plaza.receiveShadow = true;
+            scene.add(plaza);
+        }
+
+        // ============================================================================
+        // PISTE D'ATTERRISSAGE 09/27, TAXIWAYS & BALISAGE LUMINEUX
+        // ============================================================================
+        function buildRunwayAndTaxiways() {
+            const runwayTex = createRunwayTexture();
+            const runwayGeo = new THREE.PlaneGeometry(390, 36);
+            const runwayMat = new THREE.MeshStandardMaterial({
+                map: runwayTex,
+                roughness: 0.75,
+                metalness: 0.05
+            });
+            const runway = new THREE.Mesh(runwayGeo, runwayMat);
+            runway.rotation.x = -Math.PI / 2;
+            runway.position.set(0, 0.05, -112);
+            runway.receiveShadow = true;
+            scene.add(runway);
+
+            // Taxiway parallèle et bretelles de liaison
+            const taxiMat = new THREE.MeshStandardMaterial({ color: 0x2d3038, roughness: 0.85 });
+            const taxiLineMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
+
+            const connectorPositions = [-120, -40, 45, 125];
+            connectorPositions.forEach(cx => {
+                const conn = new THREE.Mesh(new THREE.PlaneGeometry(14, 34), taxiMat);
+                conn.rotation.x = -Math.PI / 2;
+                conn.position.set(cx, 0.035, -80);
+                conn.receiveShadow = true;
+                scene.add(conn);
+
+                const line = new THREE.Mesh(new THREE.PlaneGeometry(0.45, 34), taxiLineMat);
+                line.rotation.x = -Math.PI / 2;
+                line.position.set(cx, 0.045, -80);
+                scene.add(line);
+            });
+
+            // Balises lumineuses de piste (Blancs / Rouges / Verts)
+            const edgeLightGeo = new THREE.SphereGeometry(0.32, 8, 8);
+            const whiteLightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const greenLightMat = new THREE.MeshBasicMaterial({ color: 0x10b981 });
+            const redLightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+            const blueLightMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+
+            for (let x = -190; x <= 190; x += 15) {
+                // Bord nord et sud de la piste
+                const l1 = new THREE.Mesh(edgeLightGeo, whiteLightMat);
+                l1.position.set(x, 0.35, -129);
+                scene.add(l1);
+
+                const l2 = new THREE.Mesh(edgeLightGeo, whiteLightMat);
+                l2.position.set(x, 0.35, -95);
+                scene.add(l2);
+
+                animatedObjects.runwayLights.push(l1, l2);
+            }
+
+            // Feux de seuil de piste (Verts à l'entrée 09, Rouges à l'extrémité 27)
+            for (let z = -128; z <= -96; z += 4) {
+                const startL = new THREE.Mesh(edgeLightGeo, greenLightMat);
+                startL.position.set(-193, 0.4, z);
+                scene.add(startL);
+
+                const endL = new THREE.Mesh(edgeLightGeo, redLightMat);
+                endL.position.set(193, 0.4, z);
+                scene.add(endL);
+            }
+
+            // Feux bleus de taxiway
+            connectorPositions.forEach(cx => {
+                for (let z = -92; z <= -66; z += 6) {
+                    const b1 = new THREE.Mesh(edgeLightGeo, blueLightMat);
+                    b1.position.set(cx - 6.5, 0.3, z);
+                    const b2 = new THREE.Mesh(edgeLightGeo, blueLightMat);
+                    b2.position.set(cx + 6.5, 0.3, z);
+                    scene.add(b1, b2);
+                    animatedObjects.taxiwayLights.push(b1, b2);
+                }
+            });
+        }
+
+        // ============================================================================
+        // TERMINAL PRINCIPAL D'ESCOBAR INTERNATIONAL (ARCHITECTURE GOOGIE & DÔMES)
+        // ============================================================================
+        function buildEscobarTerminal() {
+            const terminalGroup = new THREE.Group();
+            terminalGroup.position.set(-15, 0, 8);
+
+            // Matériaux emblématiques Vice City (Blanc crème Art Déco, Verre turquoise, Néons)
+            const stuccoWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xf8fafc,
+                roughness: 0.45,
+                metalness: 0.05
+            });
+            const pastelPinkTrimMat = new THREE.MeshStandardMaterial({
+                color: 0xf472b6,
+                roughness: 0.35,
+                metalness: 0.1
+            });
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0x06b6d4,
+                emissive: 0x083344,
+                emissiveIntensity: 0.45,
+                roughness: 0.12,
+                metalness: 0.85,
+                transparent: true,
+                opacity: 0.88
+            });
+            animatedObjects.windowMaterials.push(glassMat);
+
+            const neonPinkMat = new THREE.MeshBasicMaterial({ color: 0xff4da6 });
+            const neonCyanMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+            animatedObjects.neonMaterials.push(neonPinkMat, neonCyanMat);
+
+            // 1. Corps principal allongé du terminal (Hall central + ailes)
+            const mainBody = new THREE.Mesh(new THREE.BoxGeometry(118, 12, 26), stuccoWhiteMat);
+            mainBody.position.set(0, 6, 0);
+            mainBody.castShadow = true;
+            mainBody.receiveShadow = true;
+            terminalGroup.add(mainBody);
+
+            // Façades vitrées panoramiques avant et arrière
+            const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(112, 8.5, 26.6), glassMat);
+            frontGlass.position.set(0, 5.8, 0);
+            terminalGroup.add(frontGlass);
+
+            // Piliers blancs structurants en façade
+            for (let x = -54; x <= 54; x += 9) {
+                const pillarFront = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.75, 12.2, 12), stuccoWhiteMat);
+                pillarFront.position.set(x, 6.1, 13.4);
+                pillarFront.castShadow = true;
+                terminalGroup.add(pillarFront);
+
+                const pillarBack = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.75, 12.2, 12), stuccoWhiteMat);
+                pillarBack.position.set(x, 6.1, -13.4);
+                pillarBack.castShadow = true;
+                terminalGroup.add(pillarBack);
+            }
+
+            // Toit en porte-à-faux style Googie avec liseré néon cyan & rose
+            const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(124, 1.4, 32), stuccoWhiteMat);
+            roofSlab.position.set(0, 12.6, 0);
+            roofSlab.castShadow = true;
+            terminalGroup.add(roofSlab);
+
+            const neonRimCyan = new THREE.Mesh(new THREE.BoxGeometry(124.6, 0.35, 32.6), neonCyanMat);
+            neonRimCyan.position.set(0, 12.9, 0);
+            terminalGroup.add(neonRimCyan);
+
+            const neonRimPink = new THREE.Mesh(new THREE.BoxGeometry(124.6, 0.35, 32.6), neonPinkMat);
+            neonRimPink.position.set(0, 12.2, 0);
+            terminalGroup.add(neonRimPink);
+
+            // 2. LES DEUX GRANDS DÔMES / COUPOLES FUTURISTES EMBLÉMATIQUES
+            const domeOffsets = [-28, 28];
+            domeOffsets.forEach(dx => {
+                const domeGroup = new THREE.Group();
+                domeGroup.position.set(dx, 13.2, 0);
+
+                // Base cylindrique vitrée du dôme
+                const drum = new THREE.Mesh(new THREE.CylinderGeometry(14.5, 15.5, 4.5, 32), glassMat);
+                drum.position.y = 2.25;
+                domeGroup.add(drum);
+
+                // Anneau blanc et rose autour de la coupole
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(15.6, 0.7, 12, 48), stuccoWhiteMat);
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = 4.5;
+                domeGroup.add(ring);
+
+                const ringNeon = new THREE.Mesh(new THREE.TorusGeometry(16.1, 0.22, 8, 48), neonPinkMat);
+                ringNeon.rotation.x = Math.PI / 2;
+                ringNeon.position.y = 4.5;
+                domeGroup.add(ringNeon);
+
+                // Coupole aplatie style soucoupe Googie
+                const domeCap = new THREE.Mesh(
+                    new THREE.SphereGeometry(15.2, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+                    stuccoWhiteMat
+                );
+                domeCap.scale.set(1, 0.52, 1);
+                domeCap.position.y = 4.5;
+                domeCap.castShadow = true;
+                domeGroup.add(domeCap);
+
+                // Flèche décorative au sommet du dôme
+                const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.5, 5, 12), pastelPinkTrimMat);
+                spire.position.y = 13.5;
+                domeGroup.add(spire);
+
+                terminalGroup.add(domeGroup);
+            });
+
+            // 3. Arche centrale d'entrée côté ville (Canopée futuriste Googie)
+            const archGroup = new THREE.Group();
+            archGroup.position.set(0, 0, 16);
+
+            const canopy = new THREE.Mesh(new THREE.BoxGeometry(34, 1.2, 11), stuccoWhiteMat);
+            canopy.position.set(0, 7.5, 1);
+            canopy.castShadow = true;
+            archGroup.add(canopy);
+
+            const canopyNeon = new THREE.Mesh(new THREE.BoxGeometry(34.4, 0.35, 11.4), neonPinkMat);
+            canopyNeon.position.set(0, 7.5, 1);
+            archGroup.add(canopyNeon);
+
+            // Arches inclinées caractéristiques de Vice City
+            [-14, 14].forEach(ax => {
+                const strut = new THREE.Mesh(new THREE.BoxGeometry(1.4, 14, 2.2), stuccoWhiteMat);
+                strut.position.set(ax, 6.5, 2.5);
+                strut.rotation.x = -0.22;
+                strut.castShadow = true;
+                archGroup.add(strut);
+            });
+
+            // Grande enseigne néon "ESCOBAR INTERNATIONAL"
+            const signTex = createNeonSignTexture("ESCOBAR INTERNATIONAL", "Vice City Airport", "#130724", "#00f0ff", "#ff6ec7");
+            const signMat = new THREE.MeshBasicMaterial({ map: signTex });
+            const signBoard = new THREE.Mesh(new THREE.BoxGeometry(32, 5.2, 0.8), signMat);
+            signBoard.position.set(0, 15.8, -1.5);
+            archGroup.add(signBoard);
+
+            // Enseigne côté piste également
+            const signBoardAirside = new THREE.Mesh(new THREE.BoxGeometry(32, 5.2, 0.8), signMat);
+            signBoardAirside.position.set(0, 15.8, -31);
+            signBoardAirside.rotation.y = Math.PI;
+            archGroup.add(signBoardAirside);
+
+            terminalGroup.add(archGroup);
+
+            // 4. Passerelles d'embarquement (Jetways) côté tarmac
+            const jetwayPositions = [-35, 0, 35];
+            jetwayPositions.forEach(jx => {
+                const jetway = new THREE.Group();
+                jetway.position.set(jx, 5.2, -13.5);
+
+                // Rotonde de connexion
+                const rotunda = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 3.6, 16), stuccoWhiteMat);
+                rotunda.position.set(0, 0, -1.5);
+                jetway.add(rotunda);
+
+                // Tunnel télescopique
+                const tunnel = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 15), stuccoWhiteMat);
+                tunnel.position.set(0, -0.2, -9.5);
+                tunnel.castShadow = true;
+                jetway.add(tunnel);
+
+                // Bande rose pastel sur le jetway
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 15), pastelPinkTrimMat);
+                stripe.position.set(0, -0.2, -9.5);
+                jetway.add(stripe);
+
+                // Pilier de support sur roues
+                const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 4.2, 10), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+                leg.position.set(0, -3.1, -14);
+                jetway.add(leg);
+
+                terminalGroup.add(jetway);
+            });
+
+            scene.add(terminalGroup);
+        }
+
+        // ============================================================================
+        // TOUR DE CONTRÔLE PANORAMIQUE & RADAR ROTATIF
+        // ============================================================================
+        function buildControlTower() {
+            const towerGroup = new THREE.Group();
+            towerGroup.position.set(56, 0, -2);
+
+            const towerWallMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4 });
+            const accentMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.3 });
+            const cabGlassMat = new THREE.MeshPhysicalMaterial({
+                color: 0x22d3ee,
+                emissive: 0x0e7490,
+                emissiveIntensity: 0.65,
+                roughness: 0.1,
+                metalness: 0.9,
+                transparent: true,
+                opacity: 0.85
+            });
+            animatedObjects.windowMaterials.push(cabGlassMat);
+
+            // Base technique de la tour
+            const base = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 16), towerWallMat);
+            base.position.y = 4;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            towerGroup.add(base);
+
+            // Fût élancé octogonal
+            const shaft = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 5.6, 30, 8), towerWallMat);
+            shaft.position.y = 22;
+            shaft.castShadow = true;
+            towerGroup.add(shaft);
+
+            // Nervures verticales cyan
+            for (let i = 0; i < 4; i++) {
+                const angle = (i * Math.PI) / 2;
+                const rib = new THREE.Mesh(new THREE.BoxGeometry(0.8, 30, 0.8), accentMat);
+                rib.position.set(Math.cos(angle) * 4.8, 22, Math.sin(angle) * 4.8);
+                towerGroup.add(rib);
+            }
+
+            // Passerelle extérieure sous la vigie
+            const deck = new THREE.Mesh(new THREE.CylinderGeometry(8.5, 7.2, 1.8, 16), towerWallMat);
+            deck.position.y = 37;
+            deck.castShadow = true;
+            towerGroup.add(deck);
+
+            // Néon rose autour de la vigie
+            const towerNeon = new THREE.Mesh(
+                new THREE.TorusGeometry(8.6, 0.22, 8, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff4da6 })
+            );
+            towerNeon.rotation.x = Math.PI / 2;
+            towerNeon.position.y = 37.3;
+            towerGroup.add(towerNeon);
+
+            // Cabine vitrée inclinée vers l'extérieur (Vigie ATC)
+            const cab = new THREE.Mesh(new THREE.CylinderGeometry(9.2, 7.6, 5.2, 12), cabGlassMat);
+            cab.position.y = 40.3;
+            towerGroup.add(cab);
+
+            // Toit de la tour
+            const cabRoof = new THREE.Mesh(new THREE.CylinderGeometry(9.8, 9.6, 1.4, 12), towerWallMat);
+            cabRoof.position.y = 43.4;
+            cabRoof.castShadow = true;
+            towerGroup.add(cabRoof);
+
+            // Antenne radar rotative au sommet
+            const radarGroup = new THREE.Group();
+            radarGroup.position.y = 45.8;
+
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 3.2, 8), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+            radarGroup.add(mast);
+
+            const dish = new THREE.Mesh(new THREE.BoxGeometry(6.8, 1.2, 0.4), new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.6 }));
+            dish.position.y = 1.6;
+            radarGroup.add(dish);
+
+            // Balise rouge clignotante au sommet
+            const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff1133 });
+            const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 10), beaconMat);
+            beacon.position.y = 2.6;
+            radarGroup.add(beacon);
+            animatedObjects.beaconLights.push(beacon);
+
+            towerGroup.add(radarGroup);
+            animatedObjects.radarDish = radarGroup;
+
+            scene.add(towerGroup);
+        }
+
+        // ============================================================================
+        // HANGARS MÉTALLIQUES À AVIONS
+        // ============================================================================
+        function buildHangars() {
+            const hangarPositions = [
+                { x: -125, z: -12, open: true },
+                { x: -125, z: 22, open: false }
+            ];
+
+            const metalWallMat = new THREE.MeshStandardMaterial({
+                color: 0xcbd5e1,
+                roughness: 0.45,
+                metalness: 0.45
+            });
+            const roofCyanMat = new THREE.MeshStandardMaterial({
+                color: 0x0891b2,
+                roughness: 0.5,
+                metalness: 0.3
+            });
+            const interiorDarkMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                side: THREE.DoubleSide
+            });
+
+            hangarPositions.forEach((cfg, idx) => {
+                const hGroup = new THREE.Group();
+                hGroup.position.set(cfg.x, 0, cfg.z);
+
+                // Structure arquée du hangar
+                const width = 34;
+                const depth = 28;
+                const wallH = 11;
+
+                // Murs latéraux et arrière
+                const leftWall = new THREE.Mesh(new THREE.BoxGeometry(width, wallH, 1.2), metalWallMat);
+                leftWall.position.set(0, wallH / 2, -depth / 2);
+                leftWall.castShadow = true;
+                hGroup.add(leftWall);
+
+                const rightWall = new THREE.Mesh(new THREE.BoxGeometry(width, wallH, 1.2), metalWallMat);
+                rightWall.position.set(0, wallH / 2, depth / 2);
+                rightWall.castShadow = true;
+                hGroup.add(rightWall);
+
+                const backWall = new THREE.Mesh(new THREE.BoxGeometry(1.2, wallH, depth), metalWallMat);
+                backWall.position.set(-width / 2, wallH / 2, 0);
+                backWall.castShadow = true;
+                hGroup.add(backWall);
+
+                // Toit voûté
+                const archRoof = new THREE.Mesh(
+                    new THREE.CylinderGeometry(depth / 2, depth / 2, width, 24, 1, false, 0, Math.PI),
+                    roofCyanMat
+                );
+                archRoof.rotation.z = Math.PI / 2;
+                archRoof.rotation.x = Math.PI / 2;
+                archRoof.scale.set(1, 0.45, 1);
+                archRoof.position.set(0, wallH, 0);
+                archRoof.castShadow = true;
+                hGroup.add(archRoof);
+
+                // Portes coulissantes (ouvertes ou fermées)
+                if (!cfg.open) {
+                    const door = new THREE.Mesh(new THREE.BoxGeometry(0.8, wallH, depth - 1), metalWallMat);
+                    door.position.set(width / 2, wallH / 2, 0);
+                    hGroup.add(door);
+                } else {
+                    // Portes ouvertes sur les côtés + éclairage intérieur
+                    const doorL = new THREE.Mesh(new THREE.BoxGeometry(1.2, wallH, 5), metalWallMat);
+                    doorL.position.set(width / 2, wallH / 2, -depth / 2 + 2.5);
+                    const doorR = new THREE.Mesh(new THREE.BoxGeometry(1.2, wallH, 5), metalWallMat);
+                    doorR.position.set(width / 2, wallH / 2, depth / 2 - 2.5);
+                    hGroup.add(doorL, doorR);
+
+                    const ceilingLamp = new THREE.Mesh(
+                        new THREE.PlaneGeometry(18, 8),
+                        new THREE.MeshBasicMaterial({ color: 0xfef08a })
+                    );
+                    ceilingLamp.rotation.x = Math.PI / 2;
+                    ceilingLamp.position.set(0, wallH - 0.2, 0);
+                    hGroup.add(ceilingLamp);
+                }
+
+                // Panneau "HANGAR 01 / 02"
+                const signTex = createNeonSignTexture(`HANGAR 0${idx + 1}`, "Vice City Maintenance", "#1e1b4b", "#f472b6", "#38bdf8");
+                const sign = new THREE.Mesh(new THREE.PlaneGeometry(14, 3.2), new THREE.MeshBasicMaterial({ map: signTex }));
+                sign.rotation.y = Math.PI / 2;
+                sign.position.set(width / 2 + 0.3, wallH + 2.5, 0);
+                hGroup.add(sign);
+
+                scene.add(hGroup);
+            });
+        }
+
+        // ============================================================================
+        // FLOTTE D'AVIONS (AIR VICE 737, HYDRAVION SKIMMER, JETS PRIVÉS)
+        // ============================================================================
+        function createAirlinerMesh() {
+            const plane = new THREE.Group();
+            const liveryTex = createAirViceLiveryTexture();
+
+            const fuselageMat = new THREE.MeshStandardMaterial({
+                map: liveryTex,
+                roughness: 0.28,
+                metalness: 0.2
+            });
+            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+            const pinkTailMat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.35 });
+            const cyanAccentMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.35 });
+            const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
+
+            // Fuselage cylindrique
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(2.1, 2.1, 24, 24), fuselageMat);
+            body.rotation.z = Math.PI / 2;
+            body.position.y = 3.4;
+            body.castShadow = true;
+            plane.add(body);
+
+            // Nez aérodynamique
+            const nose = new THREE.Mesh(new THREE.SphereGeometry(2.1, 24, 16), whiteMat);
+            nose.scale.set(1.8, 1, 1);
+            nose.position.set(12, 3.4, 0);
+            nose.castShadow = true;
+            plane.add(nose);
+
+            // Cockpit vitré
+            const cockpit = new THREE.Mesh(
+                new THREE.SphereGeometry(1.85, 16, 12),
+                new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9 })
+            );
+            cockpit.scale.set(1.4, 0.7, 0.92);
+            cockpit.position.set(12.5, 4.1, 0);
+            plane.add(cockpit);
+
+            // Cône arrière
+            const tailCone = new THREE.Mesh(new THREE.ConeGeometry(2.1, 7.5, 24), whiteMat);
+            tailCone.rotation.z = Math.PI / 2;
+            tailCone.position.set(-15.7, 3.7, 0);
+            plane.add(tailCone);
+
+            // Ailes principales en flèche
+            const wingGeo = new THREE.BoxGeometry(5.5, 0.32, 28);
+            const wings = new THREE.Mesh(wingGeo, whiteMat);
+            wings.position.set(1.5, 2.7, 0);
+            wings.castShadow = true;
+            plane.add(wings);
+
+            // Winglets roses aux extrémités des ailes
+            [-14, 14].forEach(wz => {
+                const winglet = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.8, 0.25), pinkTailMat);
+                winglet.position.set(0.8, 3.5, wz);
+                plane.add(winglet);
+            });
+
+            // Réacteurs sous les ailes
+            [-6.5, 6.5].forEach(ez => {
+                const engine = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.85, 3.6, 16), cyanAccentMat);
+                engine.rotation.z = Math.PI / 2;
+                engine.position.set(2.8, 1.7, ez);
+                engine.castShadow = true;
+                plane.add(engine);
+
+                const intake = new THREE.Mesh(new THREE.CylinderGeometry(0.88, 0.88, 0.2, 16), darkMetalMat);
+                intake.rotation.z = Math.PI / 2;
+                intake.position.set(4.65, 1.7, ez);
+                plane.add(intake);
+            });
+
+            // Dérive verticale rose Vice City
+            const vStab = new THREE.Mesh(new THREE.BoxGeometry(4.8, 5.6, 0.35), pinkTailMat);
+            vStab.position.set(-15.5, 6.6, 0);
+            vStab.rotation.z = 0.28;
+            vStab.castShadow = true;
+            plane.add(vStab);
+
+            // Stabilisateurs horizontaux
+            const hStab = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.25, 10), whiteMat);
+            hStab.position.set(-16.2, 4.2, 0);
+            plane.add(hStab);
+
+            // Train d'atterrissage
+            const wheelPositions = [
+                [11, 0.6, 0],
+                [-1, 0.6, -2.5],
+                [-1, 0.6, 2.5]
+            ];
+            wheelPositions.forEach(([wx, wy, wz]) => {
+                const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1.8, 8), darkMetalMat);
+                strut.position.set(wx, 1.3, wz);
+                const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 12), darkMetalMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(wx, wy, wz);
+                plane.add(strut, wheel);
+            });
+
+            // Feux de navigation (Rouge gauche, Vert droite, Strobe blanc)
+            const navRed = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
+            navRed.position.set(1.5, 2.8, -14.1);
+            const navGreen = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00ff66 }));
+            navGreen.position.set(1.5, 2.8, 14.1);
+            const strobe = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            strobe.position.set(-16.2, 9.4, 0);
+
+            plane.add(navRed, navGreen, strobe);
+            plane.userData.lights = [navRed, navGreen, strobe];
+
+            return plane;
+        }
+
+        function createSkimmerSeaplaneMesh() {
+            const skimmer = new THREE.Group();
+            const yellowMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.35 });
+            const redStripeMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.35 });
+            const floatMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.4 });
+
+            // Fuselage léger
+            const body = new THREE.Mesh(new THREE.BoxGeometry(7.5, 1.3, 1.3), yellowMat);
+            body.position.y = 2.1;
+            body.castShadow = true;
+            skimmer.add(body);
+
+            // Aile haute emblématique du Skimmer de Vice City
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.18, 11.5), yellowMat);
+            wing.position.set(0.5, 3.1, 0);
+            wing.castShadow = true;
+            skimmer.add(wing);
+
+            const wingStripe = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 11.6), redStripeMat);
+            wingStripe.position.set(0.5, 3.1, 0);
+            skimmer.add(wingStripe);
+
+            // Deux flotteurs d'hydravion
+            [-1.3, 1.3].forEach(fz => {
+                const pontoon = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.55, 0.65), floatMat);
+                pontoon.position.set(0.4, 0.45, fz);
+                pontoon.castShadow = true;
+                skimmer.add(pontoon);
+
+                const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), floatMat);
+                strut1.position.set(1.5, 1.2, fz);
+                const strut2 = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), floatMat);
+                strut2.position.set(-1.0, 1.2, fz);
+                skimmer.add(strut1, strut2);
+            });
+
+            // Queue
+            const tail = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.6, 0.15), redStripeMat);
+            tail.position.set(-3.2, 3.0, 0);
+            skimmer.add(tail);
+
+            return skimmer;
+        }
+
+        function createPrivateJetMesh(accentColor) {
+            const jet = new THREE.Group();
+            const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.25 });
+            const trimMat = new THREE.MeshStandardMaterial({ color: accentColor, roughness: 0.3 });
+
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 11, 16), whiteMat);
+            body.rotation.z = Math.PI / 2;
+            body.position.y = 1.9;
+            body.castShadow = true;
+            jet.add(body);
+
+            const nose = new THREE.Mesh(new THREE.ConeGeometry(0.95, 2.8, 16), trimMat);
+            nose.rotation.z = -Math.PI / 2;
+            nose.position.set(6.9, 1.9, 0);
+            jet.add(nose);
+
+            const wings = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.18, 12.5), whiteMat);
+            wings.position.set(0.2, 1.6, 0);
+            wings.castShadow = true;
+            jet.add(wings);
+
+            const vTail = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.6, 0.2), trimMat);
+            vTail.position.set(-4.8, 3.3, 0);
+            vTail.rotation.z = 0.25;
+            jet.add(vTail);
+
+            return jet;
+        }
+
+        function buildAircraftFleet() {
+            // 1. Gros avion de ligne stationné devant le terminal (Passerelle centrale)
+            const parkedAirliner1 = createAirlinerMesh();
+            parkedAirliner1.position.set(-15, 0, -28);
+            parkedAirliner1.rotation.y = Math.PI / 2;
+            scene.add(parkedAirliner1);
+
+            // 2. Deuxième avion de ligne stationné côté est
+            const parkedAirliner2 = createAirlinerMesh();
+            parkedAirliner2.position.set(35, 0, -32);
+            parkedAirliner2.rotation.y = Math.PI / 2 + 0.35;
+            scene.add(parkedAirliner2);
+
+            // 3. Avion de ligne ANIMÉ (Boucle de décollage et survol sur la piste 09/27)
+            const activeAirliner = createAirlinerMesh();
+            activeAirliner.position.set(-180, 0, -112);
+            scene.add(activeAirliner);
+            animatedObjects.airliner = activeAirliner;
+            animatedObjects.airlinerLights = activeAirliner.userData.lights;
+
+            // 4. Hydravion Skimmer emblématique stationné près du hangar ouvert
+            const skimmer = createSkimmerSeaplaneMesh();
+            skimmer.position.set(-96, 0, -12);
+            skimmer.rotation.y = 0.25;
+            scene.add(skimmer);
+            animatedObjects.skimmerPlane = skimmer;
+
+            // 5. Jets privés sur le tarmac
+            const jet1 = createPrivateJetMesh(0xec4899);
+            jet1.position.set(78, 0, -42);
+            jet1.rotation.y = -0.6;
+            scene.add(jet1);
+
+            const jet2 = createPrivateJetMesh(0x06b6d4);
+            jet2.position.set(96, 0, -48);
+            jet2.rotation.y = -0.8;
+            scene.add(jet2);
+        }
+
+        // ============================================================================
+        // VÉHICULES D'AÉROPORT ANIMÉS (BAGAGES, CITERNE, POLICE VICE CITY)
+        // ============================================================================
+        function buildAirportVehicles() {
+            // Chariot à bagages sur le tarmac
+            const tugGroup = new THREE.Group();
+            const tugBody = new THREE.Mesh(
+                new THREE.BoxGeometry(3.2, 1.3, 1.8),
+                new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.4 })
+            );
+            tugBody.position.y = 0.85;
+            tugBody.castShadow = true;
+            tugGroup.add(tugBody);
+
+            // Remorque à bagages
+            const cart = new THREE.Mesh(
+                new THREE.BoxGeometry(3.6, 1.1, 1.7),
+                new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.5 })
+            );
+            cart.position.set(-4.2, 0.75, 0);
+            cart.castShadow = true;
+            tugGroup.add(cart);
+
+            tugGroup.position.set(-55, 0, -52);
+            scene.add(tugGroup);
+            animatedObjects.vehicles.push({
+                mesh: tugGroup,
+                type: 'tarmac',
+                minX: -85,
+                maxX: 65,
+                speed: 8.5,
+                dir: 1
+            });
+
+            // Voiture de patrouille VCPD (Vice City Police Department - Vert/Blanc) devant le terminal
+            const policeCar = new THREE.Group();
+            const chassis = new THREE.Mesh(
+                new THREE.BoxGeometry(4.6, 1.0, 2.0),
+                new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.3 })
+            );
+            chassis.position.y = 0.75;
+            chassis.castShadow = true;
+            policeCar.add(chassis);
+
+            const cabin = new THREE.Mesh(
+                new THREE.BoxGeometry(2.4, 0.85, 1.8),
+                new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
+            );
+            cabin.position.set(-0.2, 1.55, 0);
+            policeCar.add(cabin);
+
+            // Gyrophare rouge & bleu
+            const sirenRed = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 0.7), new THREE.MeshBasicMaterial({ color: 0xff0033 }));
+            sirenRed.position.set(-0.2, 2.05, -0.4);
+            const sirenBlue = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.25, 0.7), new THREE.MeshBasicMaterial({ color: 0x0088ff }));
+            sirenBlue.position.set(-0.2, 2.05, 0.4);
+            policeCar.add(sirenRed, sirenBlue);
+
+            policeCar.position.set(-90, 0, 47);
+            scene.add(policeCar);
+            animatedObjects.vehicles.push({
+                mesh: policeCar,
+                type: 'road',
+                minX: -145,
+                maxX: 135,
+                speed: 18,
+                dir: 1,
+                sirenRed,
+                sirenBlue
+            });
+
+            // Camion-citerne carburant sur le tarmac
+            const fuelTruck = new THREE.Group();
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.2), new THREE.MeshStandardMaterial({ color: 0xf43f5e }));
+            cab.position.set(2.8, 1.3, 0);
+            cab.castShadow = true;
+            const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 5.4, 16), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 }));
+            tank.rotation.z = Math.PI / 2;
+            tank.position.set(-1.2, 1.5, 0);
+            tank.castShadow = true;
+            fuelTruck.add(cab, tank);
+            fuelTruck.position.set(16, 0, -24);
+            fuelTruck.rotation.y = 0.4;
+            scene.add(fuelTruck);
+        }
+
+        // ============================================================================
+        // PALMIERS TROPICAUX, LAMPADAIRES NÉON & DÉCOR CÔTÉ VILLE
+        // ============================================================================
+        function createPalmTree(x, z, scale = 1) {
+            const palm = new THREE.Group();
+            palm.position.set(x, 0, z);
+            palm.scale.setScalar(scale);
+
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78553a, roughness: 0.9 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6, side: THREE.DoubleSide });
+
+            // Tronc légèrement courbé en segments
+            const segments = 6;
+            let curY = 0;
+            let curX = 0;
+            for (let i = 0; i < segments; i++) {
+                const segH = 2.1;
+                const trunkSeg = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.28 - i * 0.02, 0.35 - i * 0.02, segH, 8),
+                    trunkMat
+                );
+                trunkSeg.position.set(curX, curY + segH / 2, 0);
+                trunkSeg.rotation.z = -0.05 * i;
+                trunkSeg.castShadow = true;
+                palm.add(trunkSeg);
+                curY += segH - 0.1;
+                curX += 0.12 * i;
+            }
+
+            // Couronne de palmes tropicales
+            const crown = new THREE.Group();
+            crown.position.set(curX, curY, 0);
+            const frondCount = 7;
+            for (let f = 0; f < frondCount; f++) {
+                const angle = (f / frondCount) * Math.PI * 2;
+                const frond = new THREE.Mesh(new THREE.ConeGeometry(1.1, 4.8, 4), leafMat);
+                frond.scale.set(1, 1, 0.25);
+                frond.position.set(Math.cos(angle) * 2.1, -0.4, Math.sin(angle) * 2.1);
+                frond.rotation.z = -Math.PI / 2.6;
+                frond.rotation.y = -angle;
+                frond.castShadow = true;
+                crown.add(frond);
+            }
+            palm.add(crown);
+            animatedObjects.palmTrees.push(crown);
+
+            scene.add(palm);
+        }
+
+        function buildPalmTreesAndCityFront() {
+            // Rangée de palmiers le long de l'avenue d'accès devant le terminal
+            for (let x = -140; x <= 140; x += 22) {
+                createPalmTree(x, 38, 0.9 + (Math.abs(x) % 3) * 0.12);
+                createPalmTree(x + 10, 68, 1.05);
+            }
+
+            // Quelques palmiers près de la tour de contrôle et des hangars
+            createPalmTree(75, 16, 1.15);
+            createPalmTree(88, 22, 0.95);
+            createPalmTree(-105, 42, 1.1);
+
+            // Lampadaires rétro le long du trottoir
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.5 });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xffb703 });
+            for (let x = -110; x <= 90; x += 25) {
+                const lamp = new THREE.Group();
+                lamp.position.set(x, 0, 39.5);
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 7.5, 8), poleMat);
+                pole.position.y = 3.75;
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 10), bulbMat);
+                head.position.set(0, 7.6, 0.6);
+                lamp.add(pole, head);
+                scene.add(lamp);
+            }
+
+            // Grand panneau d'accueil "WELCOME TO VICE CITY" sur l'avenue
+            const welcomeTex = createNeonSignTexture("WELCOME TO VICE CITY", "Escobar International", "#18092c", "#ff4da6", "#5ce1e6");
+            const welcomeBoard = new THREE.Mesh(
+                new THREE.BoxGeometry(22, 6, 1),
+                new THREE.MeshBasicMaterial({ map: welcomeTex })
+            );
+            welcomeBoard.position.set(-125, 6.5, 68);
+            welcomeBoard.rotation.y = 0.35;
+            scene.add(welcomeBoard);
+
+            const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 6, 8), poleMat);
+            post1.position.set(-132, 3, 70.5);
+            const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 6, 8), poleMat);
+            post2.position.set(-118, 3, 65.5);
+            scene.add(post1, post2);
+        }
+
+        // ============================================================================
+        // GESTION DES AMBIANCES (COUCHER DE SOLEIL 1986, JOURNÉE MIAMI, NUIT NÉON)
+        // ============================================================================
+        function setMood(mood) {
+            currentMood = mood;
+
+            // Mise à jour boutons UI
+            document.querySelectorAll('#mood-controls button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mood === mood);
+            });
+
+            const clockEl = document.getElementById('hud-clock');
+
+            if (mood === 'sunset') {
+                skyUniforms.topColor.value.setHex(0x1b0b3b);
+                skyUniforms.midColor.value.setHex(0xc83771);
+                skyUniforms.bottomColor.value.setHex(0xff9e5e);
+                skyUniforms.sunDirection.value.set(-0.6, 0.16, -0.75).normalize();
+                skyUniforms.sunColor.value.setHex(0xffbe76);
+                skyUniforms.sunIntensity.value = 1.0;
+
+                scene.fog.color.setHex(0x3a184f);
+                scene.fog.density = 0.0017;
+
+                sunLight.color.setHex(0xff9e6d);
+                sunLight.intensity = 1.5;
+                sunLight.position.set(-150, 52, -170);
+
+                ambientLight.color.setHex(0x7c4d96);
+                ambientLight.intensity = 0.7;
+                hemiLight.color.setHex(0xff7eb9);
+                hemiLight.groundColor.setHex(0x28263b);
+
+                animatedObjects.windowMaterials.forEach(m => m.emissiveIntensity = 0.55);
+                if (animatedObjects.waterMesh) animatedObjects.waterMesh.material.color.setHex(0x1a4b6e);
+                clockEl.textContent = "19:45";
+
+            } else if (mood === 'day') {
+                skyUniforms.topColor.value.setHex(0x0284c7);
+                skyUniforms.midColor.value.setHex(0x38bdf8);
+                skyUniforms.bottomColor.value.setHex(0xbae6fd);
+                skyUniforms.sunDirection.value.set(-0.4, 0.75, -0.5).normalize();
+                skyUniforms.sunColor.value.setHex(0xfffbeb);
+                skyUniforms.sunIntensity.value = 0.45;
+
+                scene.fog.color.setHex(0x93c5fd);
+                scene.fog.density = 0.0009;
+
+                sunLight.color.setHex(0xfffdf5);
+                sunLight.intensity = 1.85;
+                sunLight.position.set(-90, 175, -110);
+
+                ambientLight.color.setHex(0x93c5fd);
+                ambientLight.intensity = 0.85;
+                hemiLight.color.setHex(0xe0f2fe);
+                hemiLight.groundColor.setHex(0x475569);
+
+                animatedObjects.windowMaterials.forEach(m => m.emissiveIntensity = 0.15);
+                if (animatedObjects.waterMesh) animatedObjects.waterMesh.material.color.setHex(0x0284c7);
+                clockEl.textContent = "13:20";
+
+            } else if (mood === 'night') {
+                skyUniforms.topColor.value.setHex(0x050212);
+                skyUniforms.midColor.value.setHex(0x180a33);
+                skyUniforms.bottomColor.value.setHex(0x2e1052);
+                skyUniforms.sunIntensity.value = 0.0;
+
+                scene.fog.color.setHex(0x0d0621);
+                scene.fog.density = 0.0022;
+
+                sunLight.color.setHex(0x6366f1);
+                sunLight.intensity = 0.45;
+                sunLight.position.set(100, 110, 80);
+
+                ambientLight.color.setHex(0x3b2667);
+                ambientLight.intensity = 0.55;
+                hemiLight.color.setHex(0x818cf8);
+                hemiLight.groundColor.setHex(0x0f172a);
+
+                animatedObjects.windowMaterials.forEach(m => m.emissiveIntensity = 1.15);
+                if (animatedObjects.waterMesh) animatedObjects.waterMesh.material.color.setHex(0x091e36);
+                clockEl.textContent = "23:58";
+            }
+        }
+
+        // ============================================================================
+        // CONTRÔLES UTILISATEUR, CAMÉRAS PRÉDÉFINIES & DÉPLACEMENT LIBRE
+        // ============================================================================
+        function selectCameraPreset(key) {
+            const preset = CAMERA_PRESETS[key];
+            if (!preset) return;
+
+            document.querySelectorAll('#camera-presets button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cam === key);
+            });
+
+            targetCamPos = preset.pos.clone();
+            targetLookAt = preset.target.clone();
+            isTransitioningCam = true;
+            showZoneBanner(preset.label);
+        }
+
+        function showZoneBanner(text) {
+            const banner = document.getElementById('zone-banner');
+            const label = document.getElementById('zone-banner-text');
+            label.textContent = text;
+            banner.classList.remove('opacity-0', 'translate-y-2');
+            banner.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(window.bannerTimeout);
+            window.bannerTimeout = setTimeout(() => {
+                banner.classList.remove('opacity-100', 'translate-y-0');
+                banner.classList.add('opacity-0', 'translate-y-2');
+            }, 3400);
+        }
+
+        function setupEventListeners() {
+            // Sélecteur d'ambiance
+            document.querySelectorAll('#mood-controls button').forEach(btn => {
+                btn.addEventListener('click', () => setMood(btn.dataset.mood));
+            });
+
+            // Vues caméra rapides
+            document.querySelectorAll('#camera-presets button').forEach(btn => {
+                btn.addEventListener('click', () => selectCameraPreset(btn.dataset.cam));
+            });
+
+            // Mode libre ZQSD / WASD
+            const freeFlyBtn = document.getElementById('toggle-freefly');
+            freeFlyBtn.addEventListener('click', () => {
+                isFreeFly = !isFreeFly;
+                freeFlyBtn.textContent = isFreeFly ? "Mode Libre: ON" : "Mode Libre: OFF";
+                freeFlyBtn.classList.toggle('bg-pink-600/50', isFreeFly);
+                if (isFreeFly) {
+                    showZoneBanner("Navigation Libre Active : Utilisez ZQSD / WASD + Souris");
+                }
+            });
+
+            // Masquer / Afficher HUD
+            const hudOverlay = document.getElementById('hud-overlay');
+            const btnHide = document.getElementById('btn-toggle-hud');
+            const btnShow = document.getElementById('btn-show-hud');
+
+            btnHide.addEventListener('click', () => {
+                hudOverlay.classList.add('hidden');
+                btnShow.classList.remove('hidden');
+            });
+            btnShow.addEventListener('click', () => {
+                hudOverlay.classList.remove('hidden');
+                btnShow.classList.add('hidden');
+            });
+
+            // Clavier (ZQSD / WASD / Flèches / Espace / Shift)
+            window.addEventListener('keydown', (e) => {
+                switch (e.code) {
+                    case 'KeyW':
+                    case 'KeyZ':
+                    case 'ArrowUp':
+                        moveState.forward = true;
+                        break;
+                    case 'KeyS':
+                    case 'ArrowDown':
+                        moveState.backward = true;
+                        break;
+                    case 'KeyA':
+                    case 'KeyQ':
+                    case 'ArrowLeft':
+                        moveState.left = true;
+                        break;
+                    case 'KeyD':
+                    case 'ArrowRight':
+                        moveState.right = true;
+                        break;
+                    case 'Space':
+                        moveState.up = true;
+                        break;
+                    case 'ShiftLeft':
+                    case 'ShiftRight':
+                        moveState.down = true;
+                        break;
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                switch (e.code) {
+                    case 'KeyW':
+                    case 'KeyZ':
+                    case 'ArrowUp':
+                        moveState.forward = false;
+                        break;
+                    case 'KeyS':
+                    case 'ArrowDown':
+                        moveState.backward = false;
+                        break;
+                    case 'KeyA':
+                    case 'KeyQ':
+                    case 'ArrowLeft':
+                        moveState.left = false;
+                        break;
+                    case 'KeyD':
+                    case 'ArrowRight':
+                        moveState.right = false;
+                        break;
+                    case 'Space':
+                        moveState.up = false;
+                        break;
+                    case 'ShiftLeft':
+                    case 'ShiftRight':
+                        moveState.down = false;
+                        break;
+                }
+            });
+
+            // Redimensionnement fluide
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // ============================================================================
+        // BOUCLE D'ANIMATION PRINCIPALE (60 FPS)
+        // ============================================================================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = Math.min(clock.getDelta(), 0.1);
+            const elapsed = clock.getElapsedTime();
+
+            // 1. Rotation de l'antenne radar sur la tour de contrôle
+            if (animatedObjects.radarDish) {
+                animatedObjects.radarDish.rotation.y += delta * 1.4;
+            }
+
+            // 2. Clignotement des balises rouges et des feux de navigation
+            const blink = Math.sin(elapsed * 6) > 0;
+            animatedObjects.beaconLights.forEach(b => {
+                b.visible = blink;
+            });
+
+            // 3. Séquence de décollage et montée en boucle de l'avion Air Vice sur la piste 09/27
+            if (animatedObjects.airliner) {
+                animatedObjects.airlinerProgress += delta * 0.065;
+                if (animatedObjects.airlinerProgress > 1) {
+                    animatedObjects.airlinerProgress = 0;
+                }
+                const p = animatedObjects.airlinerProgress;
+                const plane = animatedObjects.airliner;
+
+                if (p < 0.45) {
+                    // Accélération sur la piste
+                    const t = p / 0.45;
+                    const easeAccel = t * t;
+                    plane.position.set(-185 + easeAccel * 240, 0, -112);
+                    plane.rotation.set(0, 0, 0);
+                } else if (p < 0.85) {
+                    // Rotation & Décollage dans le ciel de Vice City
+                    const t = (p - 0.45) / 0.40;
+                    plane.position.set(55 + t * 340, Math.pow(t, 1.45) * 95, -112 - t * 25);
+                    plane.rotation.z = Math.min(t * 0.35, 0.24);
+                    plane.rotation.y = t * 0.08;
+                } else {
+                    // Approche finale pour atterrissage
+                    const t = (p - 0.85) / 0.15;
+                    plane.position.set(-340 + t * 155, (1 - t) * 42, -112);
+                    plane.rotation.z = -(1 - t) * 0.12;
+                    plane.rotation.y = 0;
+                }
+
+                // Strobe blanc clignotant sur l'avion
+                if (animatedObjects.airlinerLights[2]) {
+                    animatedObjects.airlinerLights[2].visible = Math.sin(elapsed * 14) > 0.3;
+                }
+            }
+
+            // 4. Déplacement des véhicules (Chariot à bagages & Voiture de police Vice City)
+            animatedObjects.vehicles.forEach(v => {
+                v.mesh.position.x += v.speed * v.dir * delta;
+                if (v.mesh.position.x > v.maxX) {
+                    v.dir = -1;
+                    v.mesh.rotation.y = Math.PI;
+                } else if (v.mesh.position.x < v.minX) {
+                    v.dir = 1;
+                    v.mesh.rotation.y = 0;
+                }
+
+                // Gyrophares alternés sur la voiture VCPD
+                if (v.sirenRed && v.sirenBlue) {
+                    const alt = Math.sin(elapsed * 16) > 0;
+                    v.sirenRed.visible = alt;
+                    v.sirenBlue.visible = !alt;
+                }
+            });
+
+            // 5. Légère brise tropicale sur les palmiers
+            animatedObjects.palmTrees.forEach((crown, idx) => {
+                crown.rotation.z = Math.sin(elapsed * 1.6 + idx) * 0.035;
+            });
+
+            // 6. Déplacement libre clavier (ZQSD / WASD)
+            const moveSpeed = 55 * delta;
+            const forwardDir = new THREE.Vector3();
+            camera.getWorldDirection(forwardDir);
+            forwardDir.y = 0;
+            forwardDir.normalize();
+
+            const rightDir = new THREE.Vector3();
+            rightDir.crossVectors(forwardDir, camera.up).normalize();
+
+            if (moveState.forward) {
+                camera.position.addScaledVector(forwardDir, moveSpeed);
+                controls.target.addScaledVector(forwardDir, moveSpeed);
+            }
+            if (moveState.backward) {
+                camera.position.addScaledVector(forwardDir, -moveSpeed);
+                controls.target.addScaledVector(forwardDir, -moveSpeed);
+            }
+            if (moveState.right) {
+                camera.position.addScaledVector(rightDir, moveSpeed);
+                controls.target.addScaledVector(rightDir, moveSpeed);
+            }
+            if (moveState.left) {
+                camera.position.addScaledVector(rightDir, -moveSpeed);
+                controls.target.addScaledVector(rightDir, -moveSpeed);
+            }
+            if (moveState.up) {
+                camera.position.y += moveSpeed * 0.7;
+                controls.target.y += moveSpeed * 0.7;
+            }
+            if (moveState.down && camera.position.y > 2.5) {
+                camera.position.y -= moveSpeed * 0.7;
+                controls.target.y -= moveSpeed * 0.7;
+            }
+
+            // 7. Interpolation fluide vers une caméra prédéfinie
+            if (isTransitioningCam && targetCamPos && targetLookAt) {
+                camera.position.lerp(targetCamPos, 0.055);
+                controls.target.lerp(targetLookAt, 0.055);
+                if (camera.position.distanceTo(targetCamPos) < 0.6) {
+                    isTransitioningCam = false;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Démarrage garanti après chargement complet de la page
+        window.onload = function () {
+            init();
+            animate();
+        };
+    </script>
+</body>
+</html>
